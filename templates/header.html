@@ -1,0 +1,103 @@
+{% load static %}
+
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <!-- Brand Logo -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <img src="{% static 'images/practicheck.png' %}" 
+                     alt="PractiCheck Logo"
+                     style="height: 40px; width: auto;" 
+                     class="me-2">
+                <span class="fw-bold text-white fs-4">PractiCheck</span>
+            </a>
+            
+            <!-- Mobile Toggler -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Navbar Links -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <!-- Home -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
+                    </li>
+
+                    <!-- Role-specific Dashboard -->
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        {% if user.user_type == 1 %}
+                            <a class="nav-link" href="{% url 'attachments:dashboard' %}">Dashboard</a>
+                        {% elif user.user_type == 2 %}
+                            <a class="nav-link" href="{% url 'evaluations:supervisor_dashboard' %}">Dashboard</a>
+                        {% elif user.user_type == 3 %}
+                            <a class="nav-link" href="{% url 'evaluations:lecturer_dashboard' %}">Dashboard</a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <!-- Authentication -->
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                    <!-- Profile Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i> 
+                            {{ user.username }}
+                            <small class="badge bg-secondary ms-1">
+                                {{ user.get_user_type_display }}
+                            </small>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'accounts:logout' %}" method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
+
+                            
+                        </ul>
+                    </li>
+                    {% else %}
+                    <!-- Login/Register -->
+                    <li class="nav-item">
+                        <a class="nav-link auth-link" href="{% url 'accounts:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link auth-link" href="{% url 'accounts:register' %}">Register</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<style>
+    /* Style for Login/Register */
+    .auth-link {
+        color: #ffffff !important;   /* White by default */
+        transition: color 0.3s ease;
+    }
+    .auth-link:hover {
+        color: #0b57ca !important;   /* Bootstrap Blue on hover */
+    }
+
+    /* Improve logo visibility */
+    .navbar-brand img {
+        background: #ffffff;
+        padding: 3px;
+        border-radius: 6px;
+    }
+
+    /* Prevent content from being hidden behind fixed navbar */
+    body {
+        padding-top: 70px;
+    }
+</style>

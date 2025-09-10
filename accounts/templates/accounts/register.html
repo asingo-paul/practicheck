@@ -1,0 +1,275 @@
+
+<!-- templates/accounts/register.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Register - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="auth-card card shadow">
+                    <div class="card-body p-5">
+                        <div class="auth-header text-center mb-4">
+                            <h2 class="fw-bold">Create Account</h2>
+                            <p class="text-muted">Join PractiCheck as a Student, Supervisor, or Lecturer</p>
+                        </div>
+
+                        <form method="post" class="needs-validation" novalidate id="registrationForm">
+                            {% csrf_token %}
+                            
+                            <!-- Basic Information -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_first_name" class="form-label">First Name</label>
+                                    <input type="text" name="first_name" maxlength="30" class="form-control" 
+                                           id="id_first_name" placeholder="Enter your first name" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_last_name" class="form-label">Last Name</label>
+                                    <input type="text" name="last_name" maxlength="150" class="form-control" 
+                                           id="id_last_name" placeholder="Enter your last name" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_username" class="form-label">Username</label>
+                                <input type="text" name="username" maxlength="150" autocapitalize="none" 
+                                       autocomplete="username" class="form-control" id="id_username" 
+                                       placeholder="Choose a username" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_email" class="form-label">Email Address</label>
+                                <input type="email" name="email" maxlength="254" class="form-control" 
+                                       id="id_email" placeholder="Enter your email address" required>
+                            </div>
+                            
+                            <!-- User Type Selection -->
+                            <div class="mb-4">
+                                <label class="form-label">I am a</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_type" 
+                                               id="user_type_student" value="1" checked>
+                                        <label class="form-check-label" for="user_type_student">
+                                            <i class="fas fa-user-graduate me-1"></i> Student
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_type" 
+                                               id="user_type_supervisor" value="2">
+                                        <label class="form-check-label" for="user_type_supervisor">
+                                            <i class="fas fa-briefcase me-1"></i> Supervisor
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_type" 
+                                               id="user_type_lecturer" value="3">
+                                        <label class="form-check-label" for="user_type_lecturer">
+                                            <i class="fas fa-chalkboard-teacher me-1"></i> Lecturer
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Student Profile Fields (Initially Visible) -->
+                            <div id="studentFields">
+                                <h5 class="mb-3 border-bottom pb-2">Student Information</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_student_id" class="form-label">Student ID</label>
+                                        <input type="text" name="student_id" class="form-control" 
+                                               id="id_student_id" placeholder="Enter your student ID" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_course" class="form-label">Course</label>
+                                        <input type="text" name="course" class="form-control" 
+                                               id="id_course" placeholder="Enter your course" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_year_of_study" class="form-label">Year of Study</label>
+                                        <input type="number" name="year_of_study" class="form-control" 
+                                               id="id_year_of_study" min="1" max="6" placeholder="e.g., 3" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_department" class="form-label">Department</label>
+                                        <input type="text" name="department" class="form-control" 
+                                               id="id_department" placeholder="Enter your department" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_university" class="form-label">University</label>
+                                    <input type="text" name="university" class="form-control" 
+                                           id="id_university" placeholder="Enter your university" required>
+                                </div>
+                            </div>
+                            
+                            <!-- Supervisor Profile Fields (Initially Hidden) -->
+                            <div id="supervisorFields" style="display: none;">
+                                <h5 class="mb-3 border-bottom pb-2">Supervisor Information</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_organization" class="form-label">Organization</label>
+                                        <input type="text" name="organization" class="form-control" 
+                                               id="id_organization" placeholder="Enter organization name">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_position" class="form-label">Position</label>
+                                        <input type="text" name="position" class="form-control" 
+                                               id="id_position" placeholder="Enter your position">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_supervisor_department" class="form-label">Department (Optional)</label>
+                                    <input type="text" name="supervisor_department" class="form-control" 
+                                           id="id_supervisor_department" placeholder="Enter your department">
+                                </div>
+                            </div>
+                            
+                            <!-- Lecturer Profile Fields (Initially Hidden) -->
+                            <div id="lecturerFields" style="display: none;">
+                                <h5 class="mb-3 border-bottom pb-2">Lecturer Information</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_staff_id" class="form-label">Staff ID</label>
+                                        <input type="text" name="staff_id" class="form-control" 
+                                               id="id_staff_id" placeholder="Enter your staff ID">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_lecturer_department" class="form-label">Department</label>
+                                        <input type="text" name="lecturer_department" class="form-control" 
+                                               id="id_lecturer_department" placeholder="Enter your department">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_faculty" class="form-label">Faculty</label>
+                                    <input type="text" name="faculty" class="form-control" 
+                                           id="id_faculty" placeholder="Enter your faculty">
+                                </div>
+                            </div>
+                            
+                            <!-- Passwords -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_password1" class="form-label">Password</label>
+                                    <input type="password" name="password1" autocomplete="new-password" 
+                                           class="form-control" id="id_password1" placeholder="Create a password" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_password2" class="form-label">Confirm Password</label>
+                                    <input type="password" name="password2" autocomplete="new-password" 
+                                           class="form-control" id="id_password2" placeholder="Confirm your password" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="termsAgree" required>
+                                <label class="form-check-label" for="termsAgree">
+                                    I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                                </label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                            </div>
+                        </form>
+                        
+                        <div class="text-center mt-4">
+                            <p class="mb-0">Already have an account? <a href="{% url 'accounts:login' %}">Sign in here</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+    background: linear-gradient(135deg, #f5f7fb 0%, #c3cfe2 100%);
+}
+
+.profile-section {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userTypeRadios = document.querySelectorAll('input[name="user_type"]');
+    const studentFields = document.getElementById('studentFields');
+    const supervisorFields = document.getElementById('supervisorFields');
+    const lecturerFields = document.getElementById('lecturerFields');
+    
+    function toggleProfileFields() {
+        const selectedType = document.querySelector('input[name="user_type"]:checked').value;
+        
+        // Hide all fields first
+        studentFields.style.display = 'none';
+        supervisorFields.style.display = 'none';
+        lecturerFields.style.display = 'none';
+        
+        // Remove required attributes first
+        document.querySelectorAll('#studentFields input, #supervisorFields input, #lecturerFields input').forEach(input => {
+            input.removeAttribute('required');
+        });
+        
+        // Show relevant fields and set required attributes
+        if (selectedType === '1') {
+            studentFields.style.display = 'block';
+            document.querySelectorAll('#studentFields input').forEach(input => {
+                input.setAttribute('required', 'required');
+            });
+        } else if (selectedType === '2') {
+            supervisorFields.style.display = 'block';
+            document.querySelectorAll('#supervisorFields input').forEach(input => {
+                input.setAttribute('required', 'required');
+            });
+        } else if (selectedType === '3') {
+            lecturerFields.style.display = 'block';
+            document.querySelectorAll('#lecturerFields input').forEach(input => {
+                input.setAttribute('required', 'required');
+            });
+        }
+    }
+    
+    // Add event listeners to radio buttons
+    userTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleProfileFields);
+    });
+    
+    // Initialize on page load
+    toggleProfileFields();
+    
+    // Form validation
+    const form = document.getElementById('registrationForm');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    }
+});
+</script>
+{% endblock %}

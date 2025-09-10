@@ -1,0 +1,33 @@
+<!-- templates/base_student.html -->
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+.role-header {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    color: white;
+    padding: 10px 0;
+    margin-bottom: 20px;
+}
+.role-badge {
+    background-color: #f72585;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="role-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Student Portal</h4>
+            <span class="role-badge">STUDENT</span>
+        </div>
+    </div>
+</div>
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,247 @@
+<!-- templates/attachments/assessment.html -->
+
+{% extends 'base_student.html' %}
+{% load static %}
+
+{% block title %}Assessment - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Navigation (same as dashboard) -->
+        {% include 'attachments/partials/sidebar.html' %}
+
+        <!-- Main Content -->
+        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Assessment</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-download me-1"></i> Export Results
+                    </button>
+                </div>
+            </div>
+
+            <!-- Assessment Overview -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-body text-center py-4">
+                            <h3 class="text-primary mb-3">Overall Assessment Score</h3>
+                            <div class="progress-circle" data-value="85">
+                                <span class="progress-circle-value">85%</span>
+                            </div>
+                            <div class="mt-4">
+                                <span class="badge bg-success fs-6 p-2">Grade: A</span>
+                            </div>
+                            <p class="text-muted mt-3">Based on evaluations from your supervisor and lecturer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evaluation Breakdown -->
+            <div class="row mb-4">
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header bg-white">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-briefcase me-2"></i>
+                                Supervisor Evaluation
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if supervisor_evaluation %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Overall Score:</span>
+                                    <strong>{{ supervisor_evaluation.overall_score }}/100</strong>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: {{ supervisor_evaluation.overall_score }} %"></div>
+                                </div>
+                            </div>
+                            
+                            <h6 class="mt-4 mb-3">Criteria Scores:</h6>
+                            {% for criteria_id, score in supervisor_evaluation.criteria_scores.items %}
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>Criteria {{ forloop.counter }}:</span>
+                                    <span>{{ score }}/10</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-info" style="width: {{ score|multiply:10 }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <h6 class="mt-4 mb-3">Comments:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ supervisor_evaluation.comments }}</p>
+                            </div>
+                            
+                            <div class="mt-3 text-end">
+                                <small class="text-muted">
+                                    Evaluated on: {{ supervisor_evaluation.submitted_date }}
+                                </small>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Pending Evaluation</h5>
+                                <p class="text-muted">Your supervisor has not yet completed your evaluation.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header bg-white">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>
+                                Lecturer Evaluation
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if lecturer_evaluation %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Overall Score:</span>
+                                    <strong>{{ lecturer_evaluation.overall_score }}/100</strong>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar bg-primary" 
+                                         style="width: {{ lecturer_evaluation.overall_score }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <h6 class="mt-4 mb-3">Criteria Scores:</h6>
+                            {% for criteria_id, score in lecturer_evaluation.criteria_scores.items %}
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>Criteria {{ forloop.counter }}:</span>
+                                    <span>{{ score }}/10</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-info" style="width: {{ score|multiply:10 }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <h6 class="mt-4 mb-3">Comments:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ lecturer_evaluation.comments }}</p>
+                            </div>
+                            
+                            <div class="mt-3 text-end">
+                                <small class="text-muted">
+                                    Evaluated on: {{ lecturer_evaluation.submitted_date }}
+                                </small>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Pending Evaluation</h5>
+                                <p class="text-muted">Your lecturer has not yet completed your evaluation.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Assessment -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-award me-2"></i>
+                                Final Assessment
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if final_assessment %}
+                            <div class="row text-center mb-4">
+                                <div class="col-md-4 border-end">
+                                    <h4 class="text-success">{{ final_assessment.supervisor_score }}/100</h4>
+                                    <p class="text-muted mb-0">Supervisor Score</p>
+                                </div>
+                                <div class="col-md-4 border-end">
+                                    <h4 class="text-primary">{{ final_assessment.lecturer_score }}/100</h4>
+                                    <p class="text-muted mb-0">Lecturer Score</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-primary">{{ final_assessment.final_score }}/100</h4>
+                                    <p class="text-muted mb-0">Final Score</p>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mb-4">
+                                <span class="badge bg-{% if final_assessment.grade == 'A' %}success{% elif final_assessment.grade == 'B' %}info{% else %}warning{% endif %} fs-6 p-3">
+                                    Final Grade: {{ final_assessment.grade }}
+                                </span>
+                            </div>
+                            
+                            {% if final_assessment.comments %}
+                            <h6 class="mb-3">Overall Comments:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ final_assessment.comments }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-3 text-end">
+                                <small class="text-muted">
+                                    Assessed by: {{ final_assessment.assessed_by.get_full_name }} on {{ final_assessment.assessed_date }}
+                                </small>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Assessment in Progress</h5>
+                                <p class="text-muted">Your final assessment will be available after both evaluations are completed.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+.progress-circle {
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(#4361ee 0% 85%, #e9ecef 85% 100%);
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    background: white;
+    border-radius: 50%;
+}
+
+.progress-circle-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4361ee;
+}
+</style>
+{% endblock %}

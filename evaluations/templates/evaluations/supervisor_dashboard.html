@@ -1,0 +1,332 @@
+
+{% extends 'base_supervisor.html' %}
+{% load static %}
+
+{% block title %}Supervisor Dashboard - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-2 col-md-3 d-md-block sidebar collapse bg-dark text-white">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'evaluations:supervisor_dashboard' %}">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Supervisor Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'attachments:dashboard' %}">
+                            <i class="fas fa-user me-2"></i>
+                            Student View
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link text-warning" href="#">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            Evaluation Forms
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-comments me-2"></i>
+                            Feedback
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-cog me-2"></i>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                <hr class="bg-secondary">
+                
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Supervising</span>
+                    <span class="badge bg-primary rounded-pill">{{ supervised_attachments|length }}</span>
+                </h6>
+                <ul class="nav flex-column mb-2">
+                    {% for attachment in supervised_attachments %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}">
+                            <i class="fas fa-user-graduate me-2"></i>
+                            {{ attachment.student.get_full_name }}
+                        </a>
+                    </li>
+                    {% empty %}
+                    <li class="nav-item">
+                        <a class="nav-link text-muted" href="#">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No students assigned
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Supervisor Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Students Supervising
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ supervised_attachments|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Evaluations Completed
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ evaluations|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Pending Evaluations
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_evaluations }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Average Rating Given
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">4.2/5</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-star fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students List -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-user-graduate me-2"></i>
+                                Students Under Supervision
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if supervised_attachments %}
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="studentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Organization</th>
+                                            <th>Start Date</th>
+                                            <th>End Date</th>
+                                            <th>Status</th>
+                                            <th>Evaluation</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for attachment in supervised_attachments %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="https://ui-avatars.com/api/?name={{ attachment.student.get_full_name }}&background=4e73df&color=fff&size=32" 
+                                                         alt="{{ attachment.student.get_full_name }}" class="rounded-circle me-2">
+                                                    <div>
+                                                        <h6 class="mb-0">{{ attachment.student.get_full_name }}</h6>
+                                                        <small class="text-muted">{{ attachment.student.email }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ attachment.organization }}</td>
+                                            <td>{{ attachment.start_date }}</td>
+                                            <td>{{ attachment.end_date }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if attachment.status == 'ongoing' %}success{% elif attachment.status == 'completed' %}info{% else %}warning{% endif %}">
+                                                    {{ attachment.status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if attachment.supervisor_evaluation %}
+                                                <span class="badge bg-success">Completed</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-edit me-1"></i> Evaluate
+                                                </a>
+                                                <a href="#" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-user-graduate fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Students Assigned</h5>
+                                <p class="text-muted">You don't have any students assigned for supervision yet.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Evaluations -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-history me-2"></i>
+                                Recent Evaluations
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if evaluations %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Evaluation Date</th>
+                                            <th>Overall Score</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for evaluation in evaluations %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="https://ui-avatars.com/api/?name={{ evaluation.attachment.student.get_full_name }}&background=4e73df&color=fff&size=32" 
+                                                         alt="{{ evaluation.attachment.student.get_full_name }}" class="rounded-circle me-2">
+                                                    <div>
+                                                        <h6 class="mb-0">{{ evaluation.attachment.student.get_full_name }}</h6>
+                                                        <small class="text-muted">{{ evaluation.attachment.organization }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ evaluation.submitted_date }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                        <div class="progress-bar bg-success" 
+                                                             style="width: {{ evaluation.overall_score }}%"></div>
+                                                    </div>
+                                                    <span>{{ evaluation.overall_score }}/100</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if evaluation.attachment.lecturer_evaluation %}
+                                                <span class="badge bg-info">Lecturer Reviewed</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">Awaiting Lecturer</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                                <a href="{% url 'evaluations:evaluation_form' attachment_id=evaluation.attachment.id %}" 
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Evaluations Yet</h5>
+                                <p class="text-muted">You haven't completed any evaluations yet.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable for students table
+    $('#studentsTable').DataTable({
+        pageLength: 5,
+        lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'All']],
+        responsive: true,
+        order: [[0, 'asc']]
+    });
+});
+</script>
+{% endblock %}

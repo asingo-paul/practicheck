@@ -1,0 +1,13 @@
+Django==5.2.6
+crispy-bootstrap5==0.7
+django-htmx==1.16.0
+django-extensions==3.2.3
+python-decouple==3.8
+whitenoise==6.6.0
+gunicorn==21.2.0
+asgiref==3.9.1
+django-allauth==65.11.1
+django-crispy-forms==2.4
+django-tailwind==4.2.0
+pillow==11.3.0
+sqlparse==0.5.3
