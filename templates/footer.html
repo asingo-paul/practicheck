@@ -1,0 +1,139 @@
+<!-- templates/footer.html -->
+<footer class="bg-dark text-light pt-5 pb-3 mt-5">
+    <div class="container">
+        <div class="row">
+            <!-- About Section -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <h5 class="text-uppercase fw-bold mb-4">
+                    <i class="fas fa-clipboard-check me-2"></i>PractiCheck
+                </h5>
+                <p class="text-light-50">
+                    A comprehensive industrial attachment assessment system that streamlines the process 
+                    for students, supervisors, lecturers, and administrators.
+                </p>
+                <div class="social-links mt-3">
+                    <a href="#" class="text-light me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                    <a href="#" class="text-light me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                    <a href="https://www.linkedin.com/in/asingo-paul-028122356" target="_blank" class="text-light me-3" class="footer-link" ><i class="fab fa-linkedin-in fa-lg"></i></a>
+                    <a href="#" class="text-light"><i class="fab fa-instagram fa-lg"></i></a>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5 class="text-uppercase fw-bold mb-4">Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="{% url 'home' %}" class="footer-link">Home</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">About Us</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">Features</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">FAQ</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">Contact</a></li>
+                </ul>
+            </div>
+
+            <!-- Resources -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5 class="text-uppercase fw-bold mb-4">Resources</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="#" class="footer-link">User Guide</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">Tutorial Videos</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">Documentation</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">Support Center</a></li>
+                    <li class="mb-2"><a href="#" class="footer-link">API Documentation</a></li>
+                </ul>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5 class="text-uppercase fw-bold mb-4">Contact Us</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-3">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        <span class="text-light">University Way, Computer Science Dept, Nairobi, Kenya</span>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-phone me-2"></i>
+                        <a href="tel:+254717473314" class="footer-link">+254717473314</a>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-envelope me-2"></i>
+                        <a href="mailto:support@practicheck.com" class="footer-link">support@practicheck.com</a>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        <span class="text-light">Mon - Fri: 8:00 AM - 5:00 PM</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <hr class="my-4 bg-secondary">
+
+        <!-- Copyright -->
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start">
+                <p class="text-light mb-0">&copy; 2023 PractiCheck. All rights reserved.</p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <a href="#" class="footer-link me-3">Privacy Policy</a>
+                <a href="#" class="footer-link me-3">Terms of Service</a>
+                <a href="#" class="footer-link">Cookie Policy</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Back to Top Button -->
+<button id="backToTop" class="btn btn-primary rounded-circle shadow" style="position: fixed; bottom: 20px; right: 20px; display: none;">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+<style>
+    .footer-link {
+        color: #ffffff !important; /* white by default */
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .footer-link:hover {
+        color: #0d6efd !important; /* bootstrap primary blue */
+    }
+
+    .social-links a {
+        color: #ffffff !important;
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .social-links a:hover {
+        transform: translateY(-3px);
+        color: #0d6efd !important;
+    }
+
+    #backToTop {
+        width: 50px;
+        height: 50px;
+        z-index: 1000;
+    }
+</style>
+
+<script>
+    // Back to top button functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const backToTopButton = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopButton.style.display = 'block';
+            } else {
+                backToTopButton.style.display = 'none';
+            }
+        });
+        
+        backToTopButton.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    });
+</script>

@@ -1,0 +1,346 @@
+<!-- templates/attachments/logbook.html -->
+
+{% extends 'base_student.html' %}
+{% load static %}
+
+{% block title %}Logbook - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Navigation (same as dashboard) -->
+        {% include 'attachments/partials/sidebar.html' %}
+
+        <!-- Main Content -->
+        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Logbook</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                            <i class="fas fa-download me-1"></i> Export
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+                        <i class="fas fa-plus me-1"></i> New Entry
+                    </button>
+                </div>
+            </div>
+
+            <!-- Logbook Summary -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-3 border-end">
+                                    <h4 class="text-primary">24</h4>
+                                    <p class="text-muted mb-0">Total Entries</p>
+                                </div>
+                                <div class="col-md-3 border-end">
+                                    <h4 class="text-success">18</h4>
+                                    <p class="text-muted mb-0">Approved</p>
+                                </div>
+                                <div class="col-md-3 border-end">
+                                    <h4 class="text-warning">4</h4>
+                                    <p class="text-muted mb-0">Pending Review</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <h4 class="text-info">56</h4>
+                                    <p class="text-muted mb-0">Total Hours</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logbook Entries -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-list me-2"></i>
+                                Logbook Entries
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="logbookTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Tasks</th>
+                                            <th>Hours</th>
+                                            <th>Skills</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in entries %}
+                                        <tr>
+                                            <td>{{ entry.entry_date }}</td>
+                                            <td>{{ entry.tasks|truncatewords:5 }}</td>
+                                            <td>{{ entry.hours_worked }}</td>
+                                            <td>{{ entry.skills_learned|truncatewords:3 }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if entry.supervisor_comments %}success{% else %}warning{% endif %}">
+                                                    {% if entry.supervisor_comments %}Approved{% else %}Pending{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary view-entry" data-bs-toggle="modal" data-bs-target="#viewEntryModal" data-id="{{ entry.id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary edit-entry" data-bs-toggle="modal" data-bs-target="#editEntryModal" data-id="{{ entry.id }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                                                <h5 class="text-muted">No logbook entries yet</h5>
+                                                <p class="text-muted">Get started by adding your first entry</p>
+                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+                                                    <i class="fas fa-plus me-1"></i> Add Entry
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            {% if entries.has_other_pages %}
+                            <nav aria-label="Logbook entries pagination">
+                                <ul class="pagination justify-content-center">
+                                    {% if entries.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ entries.previous_page_number }}">Previous</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Previous</span>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in entries.paginator.page_range %}
+                                    <li class="page-item {% if entries.number == i %}active{% endif %}">
+                                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                                    </li>
+                                    {% endfor %}
+
+                                    {% if entries.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ entries.next_page_number }}">Next</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Next</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add Entry Modal -->
+<div class="modal fade" id="addEntryModal" tabindex="-1" aria-labelledby="addEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEntryModalLabel">Add Logbook Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="entry_date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="entry_date" name="entry_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="hours_worked" class="form-label">Hours Worked</label>
+                            <input type="number" class="form-control" id="hours_worked" name="hours_worked" step="0.5" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="tasks" class="form-label">Tasks Completed</label>
+                        <textarea class="form-control" id="tasks" name="tasks" rows="3" required placeholder="Describe the tasks you worked on today..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="skills_learned" class="form-label">Skills Learned</label>
+                        <textarea class="form-control" id="skills_learned" name="skills_learned" rows="3" required placeholder="What new skills or knowledge did you gain?..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="challenges" class="form-label">Challenges Faced</label>
+                        <textarea class="form-control" id="challenges" name="challenges" rows="2" placeholder="Any challenges or difficulties you encountered..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Entry Modal -->
+<div class="modal fade" id="viewEntryModal" tabindex="-1" aria-labelledby="viewEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewEntryModalLabel">Logbook Entry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="entry-details">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Date:</strong> <span id="view-date"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Hours Worked:</strong> <span id="view-hours"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Tasks Completed:</strong>
+                        <p id="view-tasks" class="p-3 bg-light rounded"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Skills Learned:</strong>
+                        <p id="view-skills" class="p-3 bg-light rounded"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Challenges Faced:</strong>
+                        <p id="view-challenges" class="p-3 bg-light rounded"></p>
+                    </div>
+                    
+                    <div id="supervisor-feedback" class="p-3 bg-info text-white rounded" style="display: none;">
+                        <h6>Supervisor Feedback:</h6>
+                        <p id="view-feedback"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Logbook</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label">Format</label>
+                        <select class="form-select" id="exportFormat">
+                            <option value="pdf">PDF Document</option>
+                            <option value="csv">CSV Spreadsheet</option>
+                            <option value="excel">Excel Workbook</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dateRange" class="form-label">Date Range</label>
+                        <select class="form-select" id="dateRange">
+                            <option value="all">All Entries</option>
+                            <option value="month">This Month</option>
+                            <option value="week">This Week</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    <div id="customRange" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide custom date range
+    const dateRange = document.getElementById('dateRange');
+    const customRange = document.getElementById('customRange');
+    
+    if (dateRange && customRange) {
+        dateRange.addEventListener('change', function() {
+            customRange.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+    }
+    
+    // View entry modal
+    const viewButtons = document.querySelectorAll('.view-entry');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const entryId = this.getAttribute('data-id');
+            // In a real app, you would fetch the entry data from the server
+            // For now, we'll use dummy data
+            document.getElementById('view-date').textContent = '2023-10-20';
+            document.getElementById('view-hours').textContent = '8 hours';
+            document.getElementById('view-tasks').textContent = 'Worked on the frontend dashboard design. Implemented user authentication flow and responsive layout. Fixed several UI bugs and improved performance.';
+            document.getElementById('view-skills').textContent = 'Improved React skills, learned about state management with Redux, and practiced responsive design techniques.';
+            document.getElementById('view-challenges').textContent = 'Had issues with API integration initially, but resolved them by reviewing documentation and seeking help from colleagues.';
+            
+            // Show supervisor feedback if available
+            const hasFeedback = Math.random() > 0.5; // Random for demo
+            if (hasFeedback) {
+                document.getElementById('supervisor-feedback').style.display = 'block';
+                document.getElementById('view-feedback').textContent = 'Good work on the dashboard design. The responsive layout looks great across devices. Keep up the good work!';
+            } else {
+                document.getElementById('supervisor-feedback').style.display = 'none';
+            }
+        });
+    });
+    
+    // Set today's date as default for new entries
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('entry_date');
+    if (dateInput) {
+        dateInput.value = today;
+    }
+});
+</script>
+{% endblock %}

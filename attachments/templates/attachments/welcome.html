@@ -1,0 +1,67 @@
+<!-- templates/attachments/welcome.html -->
+{% extends 'base_student.html' %}
+
+{% block title %}Welcome - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="mb-4">
+                <i class="fas fa-user-graduate fa-5x text-primary mb-3"></i>
+                <h1 class="display-4 fw-bold">Welcome to PractiCheck, {{ user.get_full_name }}! 🎓</h1>
+                <p class="lead">You've successfully registered as a student.</p>
+            </div>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-info-circle fa-3x text-info mb-3"></i>
+                        <h3>Next Steps</h3>
+                        <p class="text-muted">It looks like you haven't been assigned to an industrial attachment yet.</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 bg-light">
+                                <div class="card-body">
+                                    <i class="fas fa-clock fa-2x text-warning mb-3"></i>
+                                    <h5>Pending Assignment</h5>
+                                    <p>Your administrator will assign you to an organization soon.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 bg-light">
+                                <div class="card-body">
+                                    <i class="fas fa-envelope fa-2x text-primary mb-3"></i>
+                                    <h5>Check Your Email</h5>
+                                    <p>You'll receive notification once your attachment is confirmed.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-question-circle me-2"></i>
+                        <strong>Need help?</strong> Contact your department administrator or 
+                        <a href="mailto:support@practicheck.com" class="alert-link">support@practicheck.com</a>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-user me-2"></i>Complete Your Profile
+                        </a>
+                        <form action="{% url 'accounts:logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

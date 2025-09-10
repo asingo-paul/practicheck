@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - PractiCheck{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Streamline Industrial Attachment Assessment</h1>
+                <p class="lead mb-4">PractiCheck is a comprehensive platform for managing student industrial attachments, evaluations, and assessments.</p>
+                {% if not user.is_authenticated %}
+                <div class="d-flex gap-3">
+                    <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg">Get Started</a>
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-lg">Login</a>
+                </div>
+                {% else %}
+                <a href="{% url 'attachments:dashboard' %}" class="btn btn-light btn-lg">Go to Dashboard</a>
+                {% endif %}
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="{% static 'images/practicheck.png' %}" alt="PractiCheck" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Key Features</h2>
+            <p class="text-muted">Everything you need for effective attachment management</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-book"></i>
+                    <h4>Digital Logbook</h4>
+                    <p>Students can maintain their logbook entries digitally with supervisor approval.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h4>Online Evaluation</h4>
+                    <p>Supervisors and lecturers can evaluate students through structured forms.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Performance Analytics</h4>
+                    <p>Track student performance with detailed analytics and reporting.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-file-upload"></i>
+                    <h4>Report Submission</h4>
+                    <p>Students can upload their attachment reports for review and grading.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-comments"></i>
+                    <h4>Communication Tools</h4>
+                    <p>Integrated messaging system for students, supervisors, and lecturers.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-tasks"></i>
+                    <h4>Task Management</h4>
+                    <p>Assign and track tasks throughout the attachment period.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- For Different Users Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Designed For Everyone</h2>
+            <p class="text-muted">Tailored experiences for different user roles</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+                        <h4>Students</h4>
+                        <p>Log your activities, submit reports, and track your assessment progress.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
+                        <h4>Supervisors</h4>
+                        <p>Evaluate students, provide feedback, and monitor their progress.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chalkboard-teacher fa-3x text-primary mb-3"></i>
+                        <h4>Lecturers</h4>
+                        <p>Review student progress, grade reports, and provide academic guidance.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-user-cog fa-3x text-primary mb-3"></i>
+                        <h4>Administrators</h4>
+                        <p>Manage users, monitor system performance, and generate reports.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+<!-- templates/base_lecturer.html -->
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+.role-header {
+    background: linear-gradient(135deg, #4cc9f0 0%, #4895ef 100%);
+    color: white;
+    padding: 10px 0;
+    margin-bottom: 20px;
+}
+.role-badge {
+    background-color: #3a0ca3;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="role-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Lecturer Portal</h4>
+            <span class="role-badge">LECTURER</span>
+        </div>
+    </div>
+</div>
+{{ block.super }}
+{% endblock %}

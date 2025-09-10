@@ -1,0 +1,107 @@
+/* static/css/evaluations.css */
+.evaluation-criteria {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.rating-section {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #4361ee;
+    width: 20px;
+    height: 20px;
+}
+
+.form-range::-moz-range-thumb {
+    background: #4361ee;
+    width: 20px;
+    height: 20px;
+}
+
+.form-range::-ms-thumb {
+    background: #4361ee;
+    width: 20px;
+    height: 20px;
+}
+
+.score-display {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4361ee;
+    min-width: 30px;
+    text-align: center;
+}
+
+.evaluation-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.grade-badge {
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Table styles for evaluation dashboards */
+#studentsTable th {
+    border-top: none;
+    font-weight: 600;
+    color: #6e707e;
+}
+
+#studentsTable td {
+    vertical-align: middle;
+}
+
+/* Progress bar styles */
+.progress {
+    overflow: visible;
+}
+
+.progress-bar {
+    border-radius: 0.375rem;
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Sidebar styles */
+.sidebar .nav-link {
+    border-left: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    border-left-color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .evaluation-criteria {
+        padding: 1rem 0;
+    }
+    
+    .rating-section {
+        padding: 1rem;
+    }
+    
+    .sidebar {
+        position: static;
+        height: auto;
+    }
+}
