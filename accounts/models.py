@@ -46,3 +46,6 @@ class LecturerProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.staff_id}"
+
+# class CustomUser(AbstractUser):
+#     profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
