@@ -1,0 +1,213 @@
+<!-- templates/attachments/logbook_entry.html -->
+{% extends 'base_student.html' %}
+{% load static %}
+
+{% block title %}
+    {% if editing %} Edit Logbook Entry - PractiCheck {% else %} Logbook Entry - PractiCheck {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.entry-form-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+}
+.form-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: translateY(-2px);
+}
+.attachment-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 10px;
+    color: white;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        {% include 'attachments/partials/student_sidebar.html' %}
+
+        <!-- Main Content -->
+        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+            
+            <!-- Header -->
+            <div class="entry-form-container p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="fas fa-pencil-alt me-2"></i>
+                            {% if editing %}Edit{% else %}Add{% endif %} Logbook Entry
+                        </h2>
+                        <p class="mb-0">{{ attachment.organization }} - {{ today }}</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'attachments:logbook' attachment_id=attachment.id %}" 
+                           class="btn btn-light me-2">
+                            <i class="fas fa-book me-1"></i> View Logbook
+                        </a>
+                        <a href="{% url 'attachments:dashboard' %}" class="btn btn-light">
+                            <i class="fas fa-home me-1"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <!-- Attachment Info -->
+                    <div class="attachment-info">
+                        <h5>{{ attachment.organization }}</h5>
+                        <p class="mb-1">
+                            <strong>Supervisor:</strong> {{ attachment.supervisor_name }}
+                            {% if attachment.supervisor_email %} | {{ attachment.supervisor_email }}{% endif %}
+                        </p>
+                        <p class="mb-0">
+                            <strong>Department:</strong> {{ attachment.department|default:"Not specified" }}
+                        </p>
+                    </div>
+
+                    <div class="card form-card">
+                        <div class="card-body">
+                            {% if existing_entry and not editing %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                You already submitted an entry for today ({{ today }}).
+                                <br>
+                                <strong>Come back tomorrow to add another one.</strong>
+                            </div>
+                            {% endif %}
+
+                            {% if editing and not entry.can_edit %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-ban me-2"></i>
+                                This entry has reached the maximum number of edits (2).
+                            </div>
+                            {% endif %}
+
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="id_entry_date" class="form-label">Date</label>
+                                        {{ form.entry_date }}
+                                        {% if form.entry_date.errors %}
+                                        <div class="text-danger">{{ form.entry_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="id_department_section" class="form-label">Department/Section</label>
+                                        {{ form.department_section }}
+                                        {% if form.department_section.errors %}
+                                        <div class="text-danger">{{ form.department_section.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Where did you work today?</div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="id_hours_worked" class="form-label">Hours Worked</label>
+                                        {{ form.hours_worked }}
+                                        {% if form.hours_worked.errors %}
+                                        <div class="text-danger">{{ form.hours_worked.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_tasks" class="form-label">Tasks Completed</label>
+                                    {{ form.tasks }}
+                                    {% if form.tasks.errors %}
+                                    <div class="text-danger">{{ form.tasks.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_skills_learned" class="form-label">Skills Learned</label>
+                                    {{ form.skills_learned }}
+                                    {% if form.skills_learned.errors %}
+                                    <div class="text-danger">{{ form.skills_learned.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_achievements" class="form-label">Achievements</label>
+                                    {{ form.achievements }}
+                                    {% if form.achievements.errors %}
+                                    <div class="text-danger">{{ form.achievements.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="id_challenges" class="form-label">Challenges & Solutions</label>
+                                    {{ form.challenges }}
+                                    {% if form.challenges.errors %}
+                                    <div class="text-danger">{{ form.challenges.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'attachments:logbook' attachment_id=attachment.id %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-1"></i> Back to Logbook
+                                    </a>
+                                    <button type="submit" class="btn btn-primary"
+                                        {% if existing_entry and not editing %}
+                                            disabled
+                                        {% elif editing and not entry.can_edit %}
+                                            disabled
+                                        {% endif %}>
+                                        <i class="fas fa-save me-1"></i> 
+                                        {% if editing %}Update Entry{% else %}Save Entry{% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap Toast Notification -->
+{% if existing_entry and not editing %}
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+  <div id="entryToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        ⚠️ You already submitted today’s entry ({{ today }}). Please come back tomorrow.
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var toastEl = document.getElementById('entryToast');
+  var toast = new bootstrap.Toast(toastEl);
+  toast.show();
+});
+</script>
+{% endif %}
+{% endblock %}

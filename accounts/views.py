@@ -10,8 +10,11 @@ from .models import StudentProfile, SupervisorProfile, LecturerProfile
 from .forms import UserLoginForm
 from attachments.models import Attachment
 from django.contrib.auth.forms import AuthenticationForm
+from attachments.models import Attachment, LogbookEntry
+from django.contrib.auth import get_user_model
+from django.shortcuts import render
 
-
+User = get_user_model()
 
 # accounts/views.py
 def register(request):
@@ -31,83 +34,7 @@ def register(request):
     return render(request, 'accounts/register.html', {'user_form': user_form})
 
 
-# accounts/views.py
-# def user_login(request):
-#     if request.method == 'POST':
-#         form = UserLoginForm(data=request.POST)
-#         if form.is_valid():
-#             user = form.get_user()
-#             login(request, user)
-            
-#             print(f"DEBUG: User {user.username} logged in with type {user.user_type}")
-#             print(f"DEBUG: User authenticated: {user.is_authenticated}")
 
-#             # Redirect based on user type
-#             if user.user_type == 1:  # Student
-#                 # Check if student has any attachments
-#                 attachments = Attachment.objects.filter(student=user)
-#                 if attachments.exists():
-#                     return redirect('attachments:dashboard')
-#                 else:
-#                     return redirect('attachments:welcome')
-                    
-#             elif user.user_type == 2:  # Supervisor
-#                 return redirect('evaluations:supervisor_dashboard')
-                
-#             elif user.user_type == 3:  # Lecturer
-#                 return redirect('evaluations:lecturer_dashboard')
-                
-#             elif user.user_type == 4:  # Admin
-#                 return redirect('/admin/')
-            
-#             # fallback
-#             return redirect('home')
-#     else:
-#         form = UserLoginForm()
-    
-#     return render(request, 'accounts/login.html', {'form': form})
-
-
-
-# def user_login(request):
-#     if request.method == 'POST':
-#         form = UserLoginForm(data=request.POST)
-#         if form.is_valid():
-#             user = form.get_user()
-#             login(request, user)
-            
-#             print(f"DEBUG: User {user.username} logged in with type {user.user_type}")
-#             print(f"DEBUG: User authenticated: {user.is_authenticated}")
-
-
-#     if request.method == 'POST':
-#         form = UserLoginForm(data=request.POST)
-#         if form.is_valid():
-#             user = form.get_user()
-#             login(request, user)
-            
-#             # Redirect based on user type
-#             if user.user_type == 1:  # Student
-#                 # Check if student has any attachments
-#                 attachments = Attachment.objects.filter(student=user)
-#                 if attachments.exists():
-#                     return redirect('attachments:dashboard')
-#                 else:
-#                     # If no attachment yet, show a welcome page
-#                     return redirect('attachments:welcome')
-                    
-#             elif user.user_type == 2:  # Supervisor
-#                 return redirect('evaluations:supervisor_dashboard')
-                
-#             elif user.user_type == 3:  # Lecturer
-#                 return redirect('evaluations:lecturer_dashboard')
-                
-#             elif user.user_type == 4:  # Admin
-#                 return redirect('/admin/')
-                
-#     else:
-#         form = UserLoginForm()
-#     return render(request, 'accounts/login.html', {'form': form})
 
 
 def user_login(request):
@@ -153,12 +80,49 @@ def user_login(request):
 def profile(request):
     user = request.user
     profile = None
+    logbook_entries = []
+    total_entries = 0
+    completion_rate = 0
     
     if hasattr(user, 'student_profile'):
         profile = user.student_profile
+        logbook_entries = LogbookEntry.objects.filter(attachment__student=user).order_by('-entry_date')[:5]
+        total_entries = LogbookEntry.objects.filter(attachment__student=user).count()
+        
+        attachments = Attachment.objects.filter(student=user)
+        if attachments.exists():
+            completion_rate = round(sum(a.progress_percentage for a in attachments) / attachments.count())
+    
     elif hasattr(user, 'supervisor_profile'):
         profile = user.supervisor_profile
     elif hasattr(user, 'lecturer_profile'):
         profile = user.lecturer_profile
     
-    return render(request, 'accounts/profile.html', {'user': user, 'profile': profile})
+    return render(request, 'accounts/profile.html', {
+        'user': user,
+        'profile': profile,
+        'logbook_entries': logbook_entries,
+        'total_entries': total_entries,
+        'completion_rate': completion_rate,
+    })
+
+@login_required
+def upload_profile_picture(request):
+    if request.method == "POST" and request.FILES.get("profile_picture"):
+        request.user.profile_picture = request.FILES["profile_picture"]
+        request.user.save()
+        messages.success(request, "Profile picture updated successfully.")
+    return redirect("accounts:profile")
+
+
+def check_username(request):
+    username = request.GET.get('username', None)
+    is_taken = User.objects.filter(username__iexact=username).exists()
+    return JsonResponse({'is_taken': is_taken})
+
+
+def about(request):
+    """
+    Renders the About Us page.
+    """
+    return render(request, 'about.html')

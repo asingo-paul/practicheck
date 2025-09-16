@@ -1,0 +1,87 @@
+<!-- attachments/export/logbook_pdf.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Logbook Export - {{ user.get_full_name }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+    h1, h2, h3 { margin: 0; padding: 5px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #444; padding: 6px; text-align: left; }
+    th { background-color: #f0f0f0; }
+    .header { margin-bottom: 20px; }
+    .info { margin: 10px 0; }
+    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Student Logbook</h1>
+    <p><strong>Generated on:</strong> {{ now|date:"Y-m-d H:i" }}</p>
+  </div>
+
+  <!-- Student Info -->
+  <div class="info">
+    <h2>Student Information</h2>
+    <p><strong>Name:</strong> {{ user.get_full_name }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+  </div>
+
+  <!-- Attachment Info -->
+  <div class="info">
+    <h2>Attachment Details</h2>
+    <p><strong>Organization:</strong> {{ attachment.organization }}</p>
+    <p><strong>Department:</strong> {{ attachment.department }}</p>
+    <p><strong>Supervisor:</strong> {{ attachment.supervisor_name }} ({{ attachment.supervisor_email }}, {{ attachment.supervisor_phone }})</p>
+    <p><strong>Start Date:</strong> {{ attachment.start_date }}</p>
+    <p><strong>End Date:</strong> {{ attachment.end_date }}</p>
+    <p><strong>Status:</strong> {{ attachment.status }}</p>
+  </div>
+
+  <!-- Entries -->
+  <div class="info">
+    <h2>Logbook Entries</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Department/Section</th>
+          <th>Tasks</th>
+          <th>Skills Learned</th>
+          <th>Achievements</th>
+          <th>Challenges</th>
+          <th>Hours Worked</th>
+          <th>Supervisor Comments</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td>{{ entry.entry_date }}</td>
+          <td>{{ entry.department_section }}</td>
+          <td>{{ entry.tasks }}</td>
+          <td>{{ entry.skills_learned }}</td>
+          <td>{{ entry.achievements }}</td>
+          <td>{{ entry.challenges }}</td>
+          <td>{{ entry.hours_worked }}</td>
+          <td>{{ entry.supervisor_comments }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align: center;">No entries available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    PractiCheck Logbook Export — {{ now|date:"Y-m-d" }}
+  </div>
+
+</body>
+</html>

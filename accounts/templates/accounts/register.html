@@ -1,5 +1,3 @@
-
-<!-- templates/accounts/register.html -->
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
@@ -19,7 +17,7 @@
 
                         <form method="post" class="needs-validation" novalidate id="registrationForm">
                             {% csrf_token %}
-                            
+
                             <!-- Basic Information -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -27,27 +25,27 @@
                                     <input type="text" name="first_name" maxlength="30" class="form-control" 
                                            id="id_first_name" placeholder="Enter your first name" required>
                                 </div>
-                                
                                 <div class="col-md-6 mb-3">
                                     <label for="id_last_name" class="form-label">Last Name</label>
                                     <input type="text" name="last_name" maxlength="150" class="form-control" 
                                            id="id_last_name" placeholder="Enter your last name" required>
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="id_username" class="form-label">Username</label>
                                 <input type="text" name="username" maxlength="150" autocapitalize="none" 
                                        autocomplete="username" class="form-control" id="id_username" 
                                        placeholder="Choose a username" required>
+                                <div id="usernameFeedback" class="form-text text-danger" style="display:none;"></div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="id_email" class="form-label">Email Address</label>
                                 <input type="email" name="email" maxlength="254" class="form-control" 
                                        id="id_email" placeholder="Enter your email address" required>
                             </div>
-                            
+
                             <!-- User Type Selection -->
                             <div class="mb-4">
                                 <label class="form-label">I am a</label>
@@ -75,8 +73,8 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Student Profile Fields (Initially Visible) -->
+
+                            <!-- Student Fields -->
                             <div id="studentFields">
                                 <h5 class="mb-3 border-bottom pb-2">Student Information</h5>
                                 <div class="row">
@@ -91,7 +89,7 @@
                                                id="id_course" placeholder="Enter your course" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="id_year_of_study" class="form-label">Year of Study</label>
@@ -104,15 +102,15 @@
                                                id="id_department" placeholder="Enter your department" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="id_university" class="form-label">University</label>
                                     <input type="text" name="university" class="form-control" 
                                            id="id_university" placeholder="Enter your university" required>
                                 </div>
                             </div>
-                            
-                            <!-- Supervisor Profile Fields (Initially Hidden) -->
+
+                            <!-- Supervisor Fields -->
                             <div id="supervisorFields" style="display: none;">
                                 <h5 class="mb-3 border-bottom pb-2">Supervisor Information</h5>
                                 <div class="row">
@@ -127,15 +125,15 @@
                                                id="id_position" placeholder="Enter your position">
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="id_supervisor_department" class="form-label">Department (Optional)</label>
                                     <input type="text" name="supervisor_department" class="form-control" 
                                            id="id_supervisor_department" placeholder="Enter your department">
                                 </div>
                             </div>
-                            
-                            <!-- Lecturer Profile Fields (Initially Hidden) -->
+
+                            <!-- Lecturer Fields -->
                             <div id="lecturerFields" style="display: none;">
                                 <h5 class="mb-3 border-bottom pb-2">Lecturer Information</h5>
                                 <div class="row">
@@ -150,41 +148,51 @@
                                                id="id_lecturer_department" placeholder="Enter your department">
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="id_faculty" class="form-label">Faculty</label>
                                     <input type="text" name="faculty" class="form-control" 
                                            id="id_faculty" placeholder="Enter your faculty">
                                 </div>
                             </div>
-                            
-                            <!-- Passwords -->
+
+                            <!-- Passwords with toggle -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="id_password1" class="form-label">Password</label>
-                                    <input type="password" name="password1" autocomplete="new-password" 
-                                           class="form-control" id="id_password1" placeholder="Create a password" required>
+                                    <div class="input-group">
+                                        <input type="password" name="password1" autocomplete="new-password" 
+                                            class="form-control" id="id_password1" placeholder="Create a password" required>
+                                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="id_password1">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                
+
                                 <div class="col-md-6 mb-3">
                                     <label for="id_password2" class="form-label">Confirm Password</label>
-                                    <input type="password" name="password2" autocomplete="new-password" 
-                                           class="form-control" id="id_password2" placeholder="Confirm your password" required>
+                                    <div class="input-group">
+                                        <input type="password" name="password2" autocomplete="new-password" 
+                                            class="form-control" id="id_password2" placeholder="Confirm your password" required>
+                                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="id_password2">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" id="termsAgree" required>
                                 <label class="form-check-label" for="termsAgree">
                                     I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
                                 </label>
                             </div>
-                            
+
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
                             </div>
                         </form>
-                        
+
                         <div class="text-center mt-4">
                             <p class="mb-0">Already have an account? <a href="{% url 'accounts:login' %}">Sign in here</a></p>
                         </div>
@@ -203,73 +211,102 @@
     padding: 2rem 0;
     background: linear-gradient(135deg, #f5f7fb 0%, #c3cfe2 100%);
 }
-
-.profile-section {
-    background-color: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Toggle profile fields
     const userTypeRadios = document.querySelectorAll('input[name="user_type"]');
     const studentFields = document.getElementById('studentFields');
     const supervisorFields = document.getElementById('supervisorFields');
     const lecturerFields = document.getElementById('lecturerFields');
-    
+
     function toggleProfileFields() {
         const selectedType = document.querySelector('input[name="user_type"]:checked').value;
-        
-        // Hide all fields first
         studentFields.style.display = 'none';
         supervisorFields.style.display = 'none';
         lecturerFields.style.display = 'none';
-        
-        // Remove required attributes first
         document.querySelectorAll('#studentFields input, #supervisorFields input, #lecturerFields input').forEach(input => {
             input.removeAttribute('required');
         });
-        
-        // Show relevant fields and set required attributes
         if (selectedType === '1') {
             studentFields.style.display = 'block';
-            document.querySelectorAll('#studentFields input').forEach(input => {
-                input.setAttribute('required', 'required');
-            });
+            document.querySelectorAll('#studentFields input').forEach(input => input.setAttribute('required','required'));
         } else if (selectedType === '2') {
             supervisorFields.style.display = 'block';
-            document.querySelectorAll('#supervisorFields input').forEach(input => {
-                input.setAttribute('required', 'required');
-            });
+            document.querySelectorAll('#supervisorFields input').forEach(input => input.setAttribute('required','required'));
         } else if (selectedType === '3') {
             lecturerFields.style.display = 'block';
-            document.querySelectorAll('#lecturerFields input').forEach(input => {
-                input.setAttribute('required', 'required');
-            });
+            document.querySelectorAll('#lecturerFields input').forEach(input => input.setAttribute('required','required'));
         }
     }
-    
-    // Add event listeners to radio buttons
-    userTypeRadios.forEach(radio => {
-        radio.addEventListener('change', toggleProfileFields);
-    });
-    
-    // Initialize on page load
+
+    userTypeRadios.forEach(radio => radio.addEventListener('change', toggleProfileFields));
     toggleProfileFields();
-    
+
+    // Password toggle
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.target);
+            if(input.type === 'password') {
+                input.type = 'text';
+                button.querySelector('i').classList.replace('fa-eye','fa-eye-slash');
+            } else {
+                input.type = 'password';
+                button.querySelector('i').classList.replace('fa-eye-slash','fa-eye');
+            }
+        });
+    });
+
+    // Username availability check
+    const usernameInput = document.getElementById('id_username');
+    const feedback = document.getElementById('usernameFeedback');
+    let usernameTimer;
+
+    usernameInput.addEventListener('input', () => {
+        clearTimeout(usernameTimer);
+        feedback.style.display = 'none';
+
+        usernameTimer = setTimeout(() => {
+            const username = usernameInput.value.trim();
+            if (username.length > 0) {
+                fetch("{% url 'accounts:check_username' %}?username=" + encodeURIComponent(username))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.is_taken) {
+                            feedback.textContent = "This username is already taken. Please choose another.";
+                            feedback.style.display = 'block';
+                            usernameInput.classList.add('is-invalid');
+                        } else {
+                            feedback.textContent = "";
+                            feedback.style.display = 'none';
+                            usernameInput.classList.remove('is-invalid');
+                            usernameInput.classList.add('is-valid');
+                        }
+                    });
+            }
+        }, 500);
+    });
+
     // Form validation
     const form = document.getElementById('registrationForm');
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
+    if(form){
+        form.addEventListener('submit', function(event){
+            if(!form.checkValidity() || usernameInput.classList.contains('is-invalid')){
                 event.preventDefault();
                 event.stopPropagation();
             }
             form.classList.add('was-validated');
         }, false);
     }
+
+    // Django messages popup with redirect
+    {% if messages %}
+        {% for message in messages %}
+            alert("{{ message|escapejs }}");
+        {% endfor %}
+        window.location.href = "{% url 'accounts:login' %}";
+    {% endif %}
 });
 </script>
 {% endblock %}
