@@ -1,0 +1,327 @@
+<!-- templates/attachments/attachment_detail.html -->
+{% extends 'base_student.html' %}
+{% load static %}
+
+{% block title %}Attachment Details - {{ attachment.organization }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        {% include 'attachments/partials/student_sidebar.html' %}
+
+        <!-- Main Content -->
+        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-building me-2"></i>
+                    {{ attachment.organization }}
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{% url 'attachments:dashboard' %}" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                    {% if attachment.student == request.user %}
+                    <a href="{% url 'attachments:edit_attachment' attachment_id=attachment.id %}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="fas fa-edit me-1"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attachment Details -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Attachment Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th width="40%">Organization:</th>
+                                            <td>{{ attachment.organization }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Department:</th>
+                                            <td>{{ attachment.department|default:"Not specified" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Supervisor:</th>
+                                            <td>{{ attachment.supervisor_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Supervisor Email:</th>
+                                            <td>{{ attachment.supervisor_email }}</td>
+                                        </tr>
+                                        {% if attachment.supervisor_phone %}
+                                        <tr>
+                                            <th>Supervisor Phone:</th>
+                                            <td>{{ attachment.supervisor_phone }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th width="40%">Status:</th>
+                                            <td>
+                                                <span class="badge bg-{% if attachment.status == 'approved' %}success{% elif attachment.status == 'pending' %}warning{% elif attachment.status == 'ongoing' %}info{% else %}secondary{% endif %}">
+                                                    {{ attachment.status|title }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Start Date:</th>
+                                            <td>{{ attachment.start_date }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>End Date:</th>
+                                            <td>{{ attachment.end_date }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Days Remaining:</th>
+                                            <td>{{ attachment.days_remaining }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Created:</th>
+                                            <td>{{ attachment.created_at|date:"M d, Y" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mt-4">
+                                <h6 class="mb-2">Progress</h6>
+                                <div class="progress" style="height: 20px;">
+                                    {% widthratio attachment.days_completed attachment.total_days 100 as progress %}
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ progress }}%;" 
+                                         aria-valuenow="{{ progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ progress }}%
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ attachment.days_completed }} of {{ attachment.total_days }} days completed
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            {% if attachment.is_active and attachment.student == request.user %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-bolt me-2"></i>
+                                Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4 mb-3">
+                                    <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-plus me-2"></i>Add Today's Entry
+                                    </a>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <a href="{% url 'attachments:logbook' attachment_id=attachment.id %}" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-book me-2"></i>View Logbook
+                                    </a>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <a href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='pdf' %}" class="btn btn-info btn-lg w-100">
+                                        <i class="fas fa-download me-2"></i>Export PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Logbook Entries -->
+            {% if entries %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-history me-2"></i>
+                                Recent Logbook Entries
+                            </h5>
+                            <span class="badge bg-primary">
+                                {{ total_entries }} total entries | {{ total_hours }} hours
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Department/Section</th>
+                                            <th>Tasks</th>
+                                            <th>Hours</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in entries %}
+                                        <tr>
+                                            <td>{{ entry.entry_date }}</td>
+                                            <td>{{ entry.department_section }}</td>
+                                            <td>{{ entry.tasks|truncatewords:5 }}</td>
+                                            <td>{{ entry.hours_worked }}</td>
+                                            <td>
+                                                {% if attachment.student == request.user %}
+                                                <a href="{% url 'attachments:edit_logbook_entry' entry_id=entry.id %}" 
+                                                   class="btn btn-sm btn-outline-primary {% if not entry.can_edit %}disabled{% endif %}"
+                                                   {% if not entry.can_edit %}title="Maximum edits reached"{% endif %}>
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-sm btn-outline-info view-entry" 
+                                                        data-bs-toggle="modal" data-bs-target="#entryModal" 
+                                                        data-entry-id="{{ entry.id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {% if entries.count > 10 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'attachments:logbook' attachment_id=attachment.id %}" class="btn btn-outline-primary">
+                                    View All Entries
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Logbook Entries Yet</h5>
+                            <p class="text-muted">Start adding your daily logbook entries to track your progress.</p>
+                            {% if attachment.student == request.user and attachment.is_active %}
+                            <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus me-2"></i>Add First Entry
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+
+<!-- Entry Detail Modal -->
+<div class="modal fade" id="entryModal" tabindex="-1" aria-labelledby="entryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="entryModalLabel">Logbook Entry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="entryModalBody">
+                Loading entry details...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // View entry details
+    const viewButtons = document.querySelectorAll('.view-entry');
+    const modalBody = document.getElementById('entryModalBody');
+    
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const entryId = this.getAttribute('data-entry-id');
+            
+            // Fetch entry details via AJAX
+            fetch(`/attachments/api/entry/${entryId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    modalBody.innerHTML = `
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Date:</strong> ${data.entry_date}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Department/Section:</strong> ${data.department_section}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Hours Worked:</strong> ${data.hours_worked}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Edit Count:</strong> ${data.edit_count}/2
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Tasks:</strong>
+                            <p class="p-2 bg-light rounded">${data.tasks}</p>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Skills Learned:</strong>
+                            <p class="p-2 bg-light rounded">${data.skills_learned}</p>
+                        </div>
+                        ${data.achievements ? `
+                        <div class="mb-3">
+                            <strong>Achievements:</strong>
+                            <p class="p-2 bg-light rounded">${data.achievements}</p>
+                        </div>
+                        ` : ''}
+                        ${data.challenges ? `
+                        <div class="mb-3">
+                            <strong>Challenges:</strong>
+                            <p class="p-2 bg-light rounded">${data.challenges}</p>
+                        </div>
+                        ` : ''}
+                        ${data.supervisor_comments ? `
+                        <div class="mb-3">
+                            <strong>Supervisor Comments:</strong>
+                            <p class="p-2 bg-info text-white rounded">${data.supervisor_comments}</p>
+                        </div>
+                        ` : ''}
+                    `;
+                })
+                .catch(error => {
+                    modalBody.innerHTML = '<div class="alert alert-danger">Error loading entry details.</div>';
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

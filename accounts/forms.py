@@ -2,24 +2,6 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import User, StudentProfile, SupervisorProfile, LecturerProfile
 
-# from django import forms
-# from django.contrib.auth.forms import UserCreationForm
-# from .models import User, StudentProfile, SupervisorProfile, LecturerProfile
-
-# class UserRegistrationForm(UserCreationForm):
-#     email = forms.EmailField(required=True)
-#     user_type = forms.ChoiceField(choices=User.USER_TYPE_CHOICES)
-    
-#     class Meta:
-#         model = User
-#         fields = ['username', 'email', 'first_name', 'last_name', 'user_type', 'password1', 'password2']
-    
-#     def save(self, commit=True):
-#         user = super().save(commit=False)
-#         user.user_type = self.cleaned_data['user_type']
-#         if commit:
-#             user.save()
-#         return user
 
 class StudentProfileForm(forms.ModelForm):
     class Meta:

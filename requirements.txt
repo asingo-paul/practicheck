@@ -11,3 +11,4 @@ django-crispy-forms==2.4
 django-tailwind==4.2.0
 pillow==11.3.0
 sqlparse==0.5.3
+weasyprint

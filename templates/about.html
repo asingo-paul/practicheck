@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="about-container py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="fw-bold">About PractiCheck</h1>
+            <p class="lead text-muted">Empowering students, lecturers, and supervisors with smart practicum management solutions.</p>
+        </div>
+
+        <div class="row align-items-center mb-5">
+            <div class="col-md-6">
+                <img src="{% static 'images/practicheck.png' %}" class="img-fluid rounded shadow" alt="Our Team">
+            </div>
+            <div class="col-md-6">
+                <h3 class="fw-bold">Our Mission</h3>
+                <p>
+                    PractiCheck aims to simplify practicum management in universities by providing a seamless platform
+                    for students, supervisors, and lecturers. Our goal is to track attendance, submissions, and progress
+                    efficiently while keeping everyone connected.
+                </p>
+            </div>
+        </div>
+
+        <div class="row align-items-center mb-5 flex-md-row-reverse">
+            <div class="col-md-6">
+                <img src="{% static 'images/tech.png' %}" class="img-fluid rounded shadow" alt="Our Technology">
+            </div>
+            <div class="col-md-6">
+                <h3 class="fw-bold">Our Technology</h3>
+                <p>
+                    Built with Django, Bootstrap, and modern web technologies, PractiCheck leverages real-time updates,
+                    secure user management, and intuitive dashboards to provide the best experience for our users.
+                    We strive for simplicity, reliability, and performance.
+                </p>
+            </div>
+        </div>
+
+        <div class="row text-center">
+            <div class="col-md-12">
+                <h3 class="fw-bold mb-4">Our Values</h3>
+                <div class="d-flex justify-content-center gap-4 flex-wrap">
+                    <div class="card shadow-sm p-3" style="width: 12rem;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Innovation</h5>
+                            <p class="card-text">We embrace new ideas to improve practicum management.</p>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm p-3" style="width: 12rem;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Integrity</h5>
+                            <p class="card-text">We maintain trust through transparency and reliability.</p>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm p-3" style="width: 12rem;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Collaboration</h5>
+                            <p class="card-text">We work closely with students and educators to achieve results.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">Join PractiCheck Today</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.about-container {
+    background: linear-gradient(135deg, #f5f7fb 0%, #c3cfe2 100%);
+}
+
+.about-container img {
+    transition: transform 0.3s ease;
+}
+
+.about-container img:hover {
+    transform: scale(1.05);
+}
+
+.card-title {
+    color: #007bff;
+}
+</style>
+{% endblock %}
