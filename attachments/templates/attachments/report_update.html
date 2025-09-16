@@ -1,0 +1,110 @@
+{% extends 'base_student.html' %}
+{% load static %}
+
+{% block title %}Update Report - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        {% include 'attachments/partials/sidebar.html' %}
+
+        <!-- Main Content -->
+        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center 
+                        pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Update Report</h1>
+                <div>
+                    <a href="{% url 'attachments:report_upload' attachment.id %}" 
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </a>
+                </div>
+            </div>
+
+            <!-- Current Report Info -->
+            {% if report %}
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ report.title }}</h5>
+                    <p class="mb-2">
+                        <span class="badge bg-info">Current Version: {{ report.version }}</span>
+                        <span class="badge bg-{{ report.status }}">{{ report.get_status_display }}</span>
+                    </p>
+                    <p class="text-muted mb-1">
+                        Submitted on: {{ report.submission_date }}
+                    </p>
+                    {% if report.feedback %}
+                    <div class="alert alert-warning mt-2">
+                        <i class="fas fa-comment-dots me-2"></i>
+                        Feedback: {{ report.feedback }}
+                    </div>
+                    {% endif %}
+                    <a href="{{ report.document.url }}" target="_blank" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i> View Current Report
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Update Form -->
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-upload me-2"></i> Upload New Version
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_title" class="form-label">Report Title</label>
+                            {{ form.title }}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_document" class="form-label">Report File</label>
+                            {{ form.document }}
+                            <div class="form-text">PDF only, max 10MB.</div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmUpdate" required>
+                            <label class="form-check-label" for="confirmUpdate">
+                                I confirm this is the correct updated version of my report.
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Save Update
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('#id_document');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const fileSize = file.size / 1024 / 1024; // MB
+                if (fileSize > 10) {
+                    alert('File size exceeds 10MB.');
+                    this.value = '';
+                }
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'pdf') {
+                    alert('Only PDF files are allowed.');
+                    this.value = '';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

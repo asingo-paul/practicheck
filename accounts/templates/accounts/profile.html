@@ -11,16 +11,20 @@
         <div class="col-lg-3 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body text-center">
-                    <div class="profile-picture mb-3">
-                        <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=4361ee&color=fff&size=120" 
-                             alt="Profile Picture" class="rounded-circle" width="120" height="120">
-                        <div class="mt-3">
-                            <button class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-camera me-1"></i> Change Photo
-                            </button>
-                        </div>
-                    </div>
-                    <h5 class="card-title">{{ user.get_full_name|default:user.username }}</h5>
+                    <!-- Profile Picture Upload -->
+                    <form id="profilePicForm" method="post" enctype="multipart/form-data" action="{% url 'accounts:upload_profile_picture' %}">
+                        {% csrf_token %}
+                        <label for="profileInput" style="cursor: pointer;">
+                            <img id="profilePreview"
+                                 src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=4361ee&color=fff&size=120{% endif %}" 
+                                 alt="Profile Picture" class="rounded-circle mb-2" width="120" height="120">
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary">Change Photo</button>
+                            </div>
+                        </label>
+                        <input type="file" name="profile_picture" id="profileInput" accept="image/*" style="display: none;">
+                    </form>
+                    <h5 class="card-title mt-3">{{ user.get_full_name|default:user.username }}</h5>
                     <p class="text-muted text-capitalize">{{ user.get_user_type_display }}</p>
                 </div>
                 <div class="list-group list-group-flush">
@@ -52,7 +56,7 @@
                     <div class="tab-content">
                         <!-- Profile Information Tab -->
                         <div class="tab-pane fade show active" id="profile-info">
-                            <form method="post" enctype="multipart/form-data">
+                            <form method="post">
                                 {% csrf_token %}
                                 
                                 <div class="row mb-4">
@@ -229,51 +233,22 @@
                             
                             <form>
                                 <h6 class="mb-3">Email Notifications</h6>
-                                
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
-                                    <label class="form-check-label" for="emailNotifications">
-                                        Email Notifications
-                                    </label>
+                                    <label class="form-check-label" for="emailNotifications">Email Notifications</label>
                                 </div>
-                                
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="logbookReminders" checked>
-                                    <label class="form-check-label" for="logbookReminders">
-                                        Logbook Entry Reminders
-                                    </label>
+                                    <label class="form-check-label" for="logbookReminders">Logbook Entry Reminders</label>
                                 </div>
-                                
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="evaluationAlerts" checked>
-                                    <label class="form-check-label" for="evaluationAlerts">
-                                        Evaluation Alerts
-                                    </label>
+                                    <label class="form-check-label" for="evaluationAlerts">Evaluation Alerts</label>
                                 </div>
-                                
                                 <div class="form-check form-switch mb-4">
                                     <input class="form-check-input" type="checkbox" id="newsletter" checked>
-                                    <label class="form-check-label" for="newsletter">
-                                        Newsletter and Updates
-                                    </label>
+                                    <label class="form-check-label" for="newsletter">Newsletter and Updates</label>
                                 </div>
-                                
-                                <h6 class="mb-3">Push Notifications</h6>
-                                
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="pushNotifications" checked>
-                                    <label class="form-check-label" for="pushNotifications">
-                                        Browser Notifications
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check form-switch mb-4">
-                                    <input class="form-check-input" type="checkbox" id="importantAlerts" checked>
-                                    <label class="form-check-label" for="importantAlerts">
-                                        Important Alerts Only
-                                    </label>
-                                </div>
-                                
                                 <button type="submit" class="btn btn-primary">Save Preferences</button>
                             </form>
                         </div>
@@ -323,7 +298,7 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="card bg-light">
                                         <div class="card-body text-center">
-                                            <h2 class="text-primary">12</h2>
+                                            <h2 class="text-primary">{{ total_entries }}</h2>
                                             <p class="text-muted mb-0">Logbook Entries</p>
                                         </div>
                                     </div>
@@ -331,12 +306,25 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="card bg-light">
                                         <div class="card-body text-center">
-                                            <h2 class="text-success">85%</h2>
+                                            <h2 class="text-success">{{ completion_rate }}%</h2>
                                             <p class="text-muted mb-0">Completion Rate</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            {% if logbook_entries %}
+                            <h5 class="mt-4 mb-3">Recent Logbook Entries</h5>
+                            <ul class="list-group">
+                                {% for entry in logbook_entries %}
+                                <li class="list-group-item {% if entry.attachment.is_completed %}list-group-item-success{% endif %}">
+                                    <strong>{{ entry.date|date:"M d, Y" }}:</strong> {{ entry.description }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted">No logbook entries yet.</p>
+                            {% endif %}
                         </div>
                         {% endif %}
                     </div>
@@ -375,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
     triggerTabList.forEach(triggerEl => {
         new bootstrap.Tab(triggerEl);
     });
-    
+
     // Handle form submissions
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
@@ -386,6 +374,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             form.classList.add('was-validated');
         });
+    });
+
+    // Profile picture upload
+    const profileInput = document.getElementById('profileInput');
+    const profileForm = document.getElementById('profilePicForm');
+    const profilePreview = document.getElementById('profilePreview');
+
+    profileInput.addEventListener('change', function() {
+        if (profileInput.files && profileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilePreview.src = e.target.result;
+            }
+            reader.readAsDataURL(profileInput.files[0]);
+            profileForm.submit();
+        }
     });
 });
 </script>
