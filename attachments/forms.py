@@ -1,4 +1,3 @@
-# 
 # attachments/forms.py
 from django import forms
 from .models import Attachment, LogbookEntry, Industry
@@ -28,13 +27,22 @@ class AttachmentForm(forms.ModelForm):
         
         if start_date and end_date:
             if start_date > end_date:
-                raise forms.ValidationError("End date must be after start date.")
+                raise forms.ValidationError("End date cannot be before start date.")
             
             if start_date < timezone.now().date():
                 raise forms.ValidationError("Start date cannot be in the past.")
+            
+            # Ensure attachment is at least 30 days
+            min_duration = (end_date - start_date).days
+            if min_duration < 30:
+                raise forms.ValidationError("Attachment must be at least 30 days long.")
+            
+            # Ensure attachment doesn't exceed 1 year
+            if min_duration > 365:
+                raise forms.ValidationError("Attachment cannot exceed 1 year.")
         
         return cleaned_data
-
+        
 class LogbookEntryForm(forms.ModelForm):
     class Meta:
         model = LogbookEntry
@@ -61,7 +69,7 @@ class LogbookEntryForm(forms.ModelForm):
 #     class Meta:
 #         model = Report
 #         fields = ['title', 'document']
-
+# 
 #     def clean_document(self):
 #         document = self.cleaned_data.get('document')
 #         if document:
@@ -70,16 +78,16 @@ class LogbookEntryForm(forms.ModelForm):
 #             if document.size > 10 * 1024 * 1024:  # 10MB
 #                 raise forms.ValidationError("File size must not exceed 10MB.")
 #         return document
-
+# 
 # from django import forms
 # from .models import LogbookEntry, Report
-
+# 
 # class LogbookEntryForm(forms.ModelForm):
 #     class Meta:
 #         model = LogbookEntry
 #         fields = '__all__'   # or list the fields you want
-        
-
+#         
+# 
 # class ReportForm(forms.ModelForm):
 #     class Meta:
 #         model = Report

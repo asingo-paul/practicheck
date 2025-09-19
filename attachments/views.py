@@ -5,8 +5,11 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.db.models import Sum
-from .models import Attachment, LogbookEntry, Industry
+from .models import Attachment, LogbookEntry, Industry, ReportUpload
 from .forms import AttachmentForm, LogbookEntryForm
+import os
+from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required, user_passes_test
 # from .models import Report, Attachment
 # from .forms import ReportForm
 
@@ -152,7 +155,6 @@ def logbook_entry(request, attachment_id):
 @login_required
 def logbook(request, attachment_id):
     """View logbook for a specific attachment (newest first)"""
-    # safer permission check (support User or StudentProfile)
     attachment = get_object_or_404(Attachment, id=attachment_id)
     owns_it = (
         attachment.student == request.user or
@@ -162,19 +164,46 @@ def logbook(request, attachment_id):
         messages.error(request, "You don't have permission to view this logbook.")
         return redirect('attachments:dashboard')
 
-    # Order by entry_date DESC, then by created timestamp/ID (handles multiple per day)
+    # Logbook entries
     entries = LogbookEntry.objects.filter(
         attachment=attachment
     ).order_by('-entry_date', '-id')
+
+    # Reports uploaded
+    reports = attachment.reports.all()
+    reports_count = reports.count()
 
     # Stats
     total_hours = entries.aggregate(Sum('hours_worked'))['hours_worked__sum'] or 0
     total_entries = entries.count()
     supervisor_reviews = entries.filter(supervisor_comments__isnull=False).count()
 
-    total_days = (attachment.end_date - attachment.start_date).days if attachment.end_date and attachment.start_date else 0
-    days_completed = (timezone.now().date() - attachment.start_date).days if attachment.start_date else 0
-    progress_percentage = min(100, max(0, int((days_completed / total_days) * 100))) if total_days > 0 else 0
+    # Calculate progress based on actual dates
+    today = timezone.now().date()
+    
+    if attachment.start_date and attachment.end_date:
+        total_days = (attachment.end_date - attachment.start_date).days
+        if today >= attachment.start_date:
+            if today <= attachment.end_date:
+                # Attachment is ongoing
+                days_completed = (today - attachment.start_date).days
+                days_remaining = (attachment.end_date - today).days
+            else:
+                # Attachment is completed
+                days_completed = total_days
+                days_remaining = 0
+        else:
+            # Attachment hasn't started yet
+            days_completed = 0
+            days_remaining = total_days
+        
+        progress_percentage = min(100, max(0, int((days_completed / total_days) * 100))) if total_days > 0 else 0
+    else:
+        # Handle cases where dates are not set
+        days_completed = 0
+        days_remaining = 0
+        progress_percentage = 0
+        total_days = 0
 
     context = {
         'attachment': attachment,
@@ -183,8 +212,14 @@ def logbook(request, attachment_id):
         'total_entries': total_entries,
         'supervisor_reviews': supervisor_reviews,
         'progress_percentage': progress_percentage,
+        'days_remaining': days_remaining,
+        'days_completed': days_completed,
+        'total_days': total_days,
+        'reports': reports,
+        'reports_count': reports_count,
     }
     return render(request, 'attachments/logbook.html', context)
+
 
 
 
@@ -334,39 +369,73 @@ def api_entry_detail(request, entry_id):
     return JsonResponse(data)
 
 
-# login_required
-# def report_upload(request, attachment_id):
-#     attachment = get_object_or_404(Attachment, id=attachment_id, student=request.user)
-#     latest_report = Report.objects.filter(attachment=attachment, student=request.user).first()
 
-#     if request.method == 'POST':
-#         form = ReportForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             report = form.save(commit=False)
-#             report.student = request.user
-#             report.attachment = attachment
 
-#             # Auto versioning (increment version number)
-#             if latest_report:
-#                 try:
-#                     prev_version = latest_report.version.split("v")[-1]
-#                     new_version = f"Final v{float(prev_version) + 0.1:.1f}"
-#                 except:
-#                     new_version = "Final v1.0"
-#             else:
-#                 new_version = "Final v1.0"
+@login_required
+def upload_report(request, attachment_id):
+    attachment = get_object_or_404(Attachment, id=attachment_id, student=request.user)
 
-#             report.version = new_version
-#             report.save()
+    # Check how many reports exist
+    reports = attachment.reports.all()
+    if request.method == "POST":
+        if reports.count() >= 2:
+            messages.error(request, "You can only upload a maximum of 2 reports.")
+            return redirect("attachments:upload_report", attachment_id=attachment.id)
 
-#             messages.success(request, "Report uploaded successfully!")
-#             return redirect('attachments:report_upload', attachment_id=attachment.id)
-#     else:
-#         form = ReportForm(instance=latest_report)
+        report_file = request.FILES.get("report")
+        if report_file:
+            ext = report_file.name.split(".")[-1].lower()
+            if ext not in ["pdf", "doc", "docx"]:
+                messages.error(request, "Invalid file type. Only PDF, DOC, and DOCX are allowed.")
+            else:
+                ReportUpload.objects.create(attachment=attachment, file=report_file)
+                messages.success(request, "Report uploaded successfully.")
+                return redirect("attachments:upload_report", attachment_id=attachment.id)
+        else:
+            messages.error(request, "Please select a file to upload.")
 
-#     reports = Report.objects.filter(attachment=attachment, student=request.user)
-#     return render(request, 'attachments/report_upload.html', {
-#         'form': form,
-#         'report': latest_report,
-#         'reports': reports
-#     })
+    return render(request, "attachments/upload_report.html", {"attachment": attachment, "reports": reports})
+
+
+def is_supervisor(user):
+    return user.user_type == 2
+
+@login_required
+@user_passes_test(is_supervisor)
+def approve_attachment(request, attachment_id):
+    if request.method == 'POST':
+        try:
+            attachment = Attachment.objects.get(id=attachment_id, supervisor=request.user)
+            attachment.status = 'active'
+            attachment.approved_date = timezone.now()
+            attachment.save()
+            
+            messages.success(request, f"Attachment for {attachment.student.get_full_name()} has been approved!")
+            return JsonResponse({'success': True, 'message': 'Attachment approved successfully'})
+            
+        except Attachment.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Attachment not found'}, status=404)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
+
+@login_required
+@user_passes_test(is_supervisor)
+def reject_attachment(request, attachment_id):
+    if request.method == 'POST':
+        try:
+            attachment = Attachment.objects.get(id=attachment_id)
+            
+            # Check if the current user is the supervisor of this attachment
+            if attachment.supervisor_email != request.user.email:
+                return JsonResponse({'success': False, 'error': 'You are not authorized to reject this attachment'}, status=403)
+            
+            attachment.status = 'cancelled'
+            attachment.save()
+            
+            messages.success(request, f"Attachment for {attachment.student.get_full_name()} has been rejected.")
+            return JsonResponse({'success': True, 'message': 'Attachment rejected successfully'})
+            
+        except Attachment.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Attachment not found'}, status=404)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)

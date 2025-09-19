@@ -38,6 +38,15 @@
     padding: 15px;
     margin-bottom: 20px;
 }
+.preview-list {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px 15px;
+    margin-top: 8px;
+}
+.preview-list ol {
+    margin-bottom: 0;
+}
 </style>
 {% endblock %}
 
@@ -141,6 +150,18 @@
                                     {% if form.tasks.errors %}
                                     <div class="text-danger">{{ form.tasks.errors }}</div>
                                     {% endif %}
+                                    {% if editing and entry.tasks %}
+                                    <div class="preview-list">
+                                        <strong>Preview:</strong>
+                                        <ol>
+                                            {% for task in entry.tasks.splitlines %}
+                                                {% if task %}
+                                                    <li>{{ task }}</li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ol>
+                                    </div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-3">
@@ -148,6 +169,18 @@
                                     {{ form.skills_learned }}
                                     {% if form.skills_learned.errors %}
                                     <div class="text-danger">{{ form.skills_learned.errors }}</div>
+                                    {% endif %}
+                                    {% if editing and entry.skills_learned %}
+                                    <div class="preview-list">
+                                        <strong>Preview:</strong>
+                                        <ol>
+                                            {% for skill in entry.skills_learned.splitlines %}
+                                                {% if skill %}
+                                                    <li>{{ skill }}</li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ol>
+                                    </div>
                                     {% endif %}
                                 </div>
 
@@ -157,6 +190,18 @@
                                     {% if form.achievements.errors %}
                                     <div class="text-danger">{{ form.achievements.errors }}</div>
                                     {% endif %}
+                                    {% if editing and entry.achievements %}
+                                    <div class="preview-list">
+                                        <strong>Preview:</strong>
+                                        <ol>
+                                            {% for achievement in entry.achievements.splitlines %}
+                                                {% if achievement %}
+                                                    <li>{{ achievement }}</li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ol>
+                                    </div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-4">
@@ -164,6 +209,18 @@
                                     {{ form.challenges }}
                                     {% if form.challenges.errors %}
                                     <div class="text-danger">{{ form.challenges.errors }}</div>
+                                    {% endif %}
+                                    {% if editing and entry.challenges %}
+                                    <div class="preview-list">
+                                        <strong>Preview:</strong>
+                                        <ol>
+                                            {% for challenge in entry.challenges.splitlines %}
+                                                {% if challenge %}
+                                                    <li>{{ challenge }}</li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ol>
+                                    </div>
                                     {% endif %}
                                 </div>
 

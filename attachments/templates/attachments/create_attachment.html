@@ -18,9 +18,72 @@
 
             <div class="card shadow">
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" id="attachmentForm">
                         {% csrf_token %}
-                        {{ form.as_p }}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please correct the following errors:</strong>
+                            <ul>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_organization" class="form-label">Organization *</label>
+                                {{ form.organization }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_industry" class="form-label">Industry</label>
+                                {{ form.industry }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_department" class="form-label">Department</label>
+                                {{ form.department }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_supervisor_name" class="form-label">Supervisor Name *</label>
+                                {{ form.supervisor_name }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_supervisor_email" class="form-label">Supervisor Email *</label>
+                                {{ form.supervisor_email }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_supervisor_phone" class="form-label">Supervisor Phone</label>
+                                {{ form.supervisor_phone }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_start_date" class="form-label">Start Date *</label>
+                                {{ form.start_date }}
+                                <div class="form-text">Attachment cannot start in the past</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_end_date" class="form-label">End Date *</label>
+                                {{ form.end_date }}
+                                <div class="form-text">Must be at least 30 days after start date</div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>Note:</strong> Your attachment will be reviewed and approved by your supervisor before it becomes active.
+                        </div>
+                        
                         <div class="mt-3">
                             <button type="submit" class="btn btn-primary">Create Attachment</button>
                             <a href="{% url 'attachments:dashboard' %}" class="btn btn-secondary">Cancel</a>
@@ -31,4 +94,67 @@
         </main>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum dates for start and end date fields
+    const startDateInput = document.getElementById('id_start_date');
+    const endDateInput = document.getElementById('id_end_date');
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (startDateInput) {
+        startDateInput.min = today;
+    }
+    
+    if (endDateInput) {
+        endDateInput.min = today;
+        
+        // Update end date min when start date changes
+        if (startDateInput) {
+            startDateInput.addEventListener('change', function() {
+                if (this.value) {
+                    const startDate = new Date(this.value);
+                    const minEndDate = new Date(startDate);
+                    minEndDate.setDate(startDate.getDate() + 30);
+                    endDateInput.min = minEndDate.toISOString().split('T')[0];
+                    
+                    // Auto-set end date to 90 days after start date if not set
+                    if (!endDateInput.value) {
+                        const defaultEndDate = new Date(startDate);
+                        defaultEndDate.setDate(startDate.getDate() + 90);
+                        endDateInput.value = defaultEndDate.toISOString().split('T')[0];
+                    }
+                }
+            });
+        }
+    }
+    
+    // Form validation
+    const form = document.getElementById('attachmentForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (startDate && endDate) {
+                const duration = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                
+                if (duration < 30) {
+                    e.preventDefault();
+                    alert('Attachment must be at least 30 days long.');
+                    endDateInput.focus();
+                }
+                
+                if (duration > 365) {
+                    e.preventDefault();
+                    alert('Attachment cannot exceed 1 year.');
+                    endDateInput.focus();
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

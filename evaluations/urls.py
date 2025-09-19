@@ -1,11 +1,3 @@
-# from django.urls import path
-# from . import views
-
-# app_name = "evaluations"   # 👈 Add this line
-
-# urlpatterns = [
-#     path("", views.index, name="index"),   # example
-# ]
 
 # evaluations/urls.py
 from django.urls import path
@@ -19,5 +11,6 @@ urlpatterns = [
         # Add the missing evaluation_form URL pattern
     path('evaluation-form/<int:attachment_id>/', views.evaluation_form, name='evaluation_form'),
     path('grading-panel/<int:attachment_id>/', views.grading_panel, name='grading_panel'),
+    
 ]
 
