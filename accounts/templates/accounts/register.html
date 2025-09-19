@@ -7,194 +7,281 @@
 <div class="auth-container">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-8 col-md-10">
-                <div class="auth-card card shadow">
+            <div class="col-lg-9 col-md-11">
+                <div class="auth-card card shadow-lg border-0">
                     <div class="card-body p-5">
                         <div class="auth-header text-center mb-4">
-                            <h2 class="fw-bold">Create Account</h2>
+                            <div class="auth-icon mb-3">
+                                <i class="fas fa-user-plus fa-3x text-primary"></i>
+                            </div>
+                            <h2 class="fw-bold text-gradient">Create Your Account</h2>
                             <p class="text-muted">Join PractiCheck as a Student, Supervisor, or Lecturer</p>
                         </div>
 
+                        {% if messages %}
+                        <div class="messages mb-4">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         <form method="post" class="needs-validation" novalidate id="registrationForm">
                             {% csrf_token %}
-
+                            
                             <!-- Basic Information -->
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_first_name" class="form-label">First Name</label>
-                                    <input type="text" name="first_name" maxlength="30" class="form-control" 
-                                           id="id_first_name" placeholder="Enter your first name" required>
+                            <div class="section-card mb-4">
+                                <h5 class="section-title"><i class="fas fa-user me-2"></i>Basic Information</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_first_name" class="form-label">First Name <span class="text-danger">*</span></label>
+                                        <input type="text" name="first_name" class="form-control form-control-lg" id="id_first_name" placeholder="First name" required>
+                                        <div class="invalid-feedback">Please provide your first name.</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                        <input type="text" name="last_name" class="form-control form-control-lg" id="id_last_name" placeholder="Last name" required>
+                                        <div class="invalid-feedback">Please provide your last name.</div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_last_name" class="form-label">Last Name</label>
-                                    <input type="text" name="last_name" maxlength="150" class="form-control" 
-                                           id="id_last_name" placeholder="Enter your last name" required>
+                                
+                                <div class="mb-3">
+                                    <label for="id_email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" name="email" class="form-control form-control-lg" id="id_email" placeholder="Email address" required>
+                                    </div>
+                                    <div class="invalid-feedback">Please provide a valid email address.</div>
                                 </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="id_username" class="form-label">Username</label>
-                                <input type="text" name="username" maxlength="150" autocapitalize="none" 
-                                       autocomplete="username" class="form-control" id="id_username" 
-                                       placeholder="Choose a username" required>
-                                <div id="usernameFeedback" class="form-text text-danger" style="display:none;"></div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="id_email" class="form-label">Email Address</label>
-                                <input type="email" name="email" maxlength="254" class="form-control" 
-                                       id="id_email" placeholder="Enter your email address" required>
                             </div>
 
                             <!-- User Type Selection -->
-                            <div class="mb-4">
-                                <label class="form-label">I am a</label>
-                                <div class="d-flex gap-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="user_type" 
-                                               id="user_type_student" value="1" checked>
-                                        <label class="form-check-label" for="user_type_student">
-                                            <i class="fas fa-user-graduate me-1"></i> Student
-                                        </label>
+                            <div class="section-card mb-4">
+                                <h5 class="section-title"><i class="fas fa-users me-2"></i>I am a <span class="text-danger">*</span></h5>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="form-check-card">
+                                            <input class="form-check-input" type="radio" name="user_type" id="user_type_student" value="1" checked>
+                                            <label class="form-check-label" for="user_type_student">
+                                                <div class="card-type">
+                                                    <i class="fas fa-user-graduate fa-2x mb-2"></i>
+                                                    <h6>Student</h6>
+                                                    <small class="text-muted">University student</small>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="user_type" 
-                                               id="user_type_supervisor" value="2">
-                                        <label class="form-check-label" for="user_type_supervisor">
-                                            <i class="fas fa-briefcase me-1"></i> Supervisor
-                                        </label>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="form-check-card">
+                                            <input class="form-check-input" type="radio" name="user_type" id="user_type_supervisor" value="2">
+                                            <label class="form-check-label" for="user_type_supervisor">
+                                                <div class="card-type">
+                                                    <i class="fas fa-briefcase fa-2x mb-2"></i>
+                                                    <h6>Supervisor</h6>
+                                                    <small class="text-muted">Industry professional</small>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="user_type" 
-                                               id="user_type_lecturer" value="3">
-                                        <label class="form-check-label" for="user_type_lecturer">
-                                            <i class="fas fa-chalkboard-teacher me-1"></i> Lecturer
-                                        </label>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="form-check-card">
+                                            <input class="form-check-input" type="radio" name="user_type" id="user_type_lecturer" value="3">
+                                            <label class="form-check-label" for="user_type_lecturer">
+                                                <div class="card-type">
+                                                    <i class="fas fa-chalkboard-teacher fa-2x mb-2"></i>
+                                                    <h6>Lecturer</h6>
+                                                    <small class="text-muted">Academic staff</small>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Student Fields -->
-                            <div id="studentFields">
-                                <h5 class="mb-3 border-bottom pb-2">Student Information</h5>
+                            <div id="studentFields" class="section-card mb-4">
+                                <h5 class="section-title"><i class="fas fa-graduation-cap me-2"></i>Student Information</h5>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_student_id" class="form-label">Student ID</label>
-                                        <input type="text" name="student_id" class="form-control" 
-                                               id="id_student_id" placeholder="Enter your student ID" required>
+                                        <label class="form-label">Student ID <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                            <input type="text" name="student_id" class="form-control" placeholder="Student ID" required>
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_course" class="form-label">Course</label>
-                                        <input type="text" name="course" class="form-control" 
-                                               id="id_course" placeholder="Enter your course" required>
+                                        <label class="form-label">Year of Study <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                            <input type="number" name="year_of_study" class="form-control" min="1" max="6" placeholder="e.g., 3" required>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="id_year_of_study" class="form-label">Year of Study</label>
-                                        <input type="number" name="year_of_study" class="form-control" 
-                                               id="id_year_of_study" min="1" max="6" placeholder="e.g., 3" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="id_department" class="form-label">Department</label>
-                                        <input type="text" name="department" class="form-control" 
-                                               id="id_department" placeholder="Enter your department" required>
-                                    </div>
-                                </div>
-
                                 <div class="mb-3">
-                                    <label for="id_university" class="form-label">University</label>
-                                    <input type="text" name="university" class="form-control" 
-                                           id="id_university" placeholder="Enter your university" required>
+                                    <label class="form-label">University <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-university"></i></span>
+                                        <select id="university" name="university" class="form-select" required>
+                                            <option value="">Select University</option>
+                                            <option value="mksu">Machakos University</option>
+                                            <option value="uon">University of Nairobi</option>
+                                            <option value="ku">Kenyatta University</option>
+                                            <option value="jkuat">JKUAT</option>
+                                            <option value="mku">Mount Kenya University</option>
+                                            <option value="strathmore">Strathmore University</option>
+                                            <option value="daystar">Daystar University</option>
+                                            <option value="usiu">USIU-Africa</option>
+                                            <option value="cuea">CUEA</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Department <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                            <select id="department" name="department" class="form-select" required>
+                                                <option value="">Select Department</option>
+                                                <option value="Agriculture">Agriculture</option>
+                                                <option value="Arts">Arts</option>
+                                                <option value="Business">Business</option>
+                                                <option value="Education">Education</option>
+                                                <option value="Engineering">Engineering</option>
+                                                <option value="Health_Sciences">Health Sciences</option>
+                                                <option value="Law">Law</option>
+                                                <option value="Science">Science</option>
+                                                <option value="IT">IT</option>
+                                                <option value="Humanities">Humanities</option>
+                                                <option value="Social_Sciences">Social Sciences</option>
+                                                <option value="Communication">Communication</option>
+                                                <option value="Theology">Theology</option>
+                                                <option value="International_Relations">International Relations</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Course <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-book"></i></span>
+                                            <select id="course" name="course" class="form-select" required>
+                                                <option value="">Select Course</option>
+                                                <!-- Courses will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Supervisor Fields -->
-                            <div id="supervisorFields" style="display: none;">
-                                <h5 class="mb-3 border-bottom pb-2">Supervisor Information</h5>
+                            <div id="supervisorFields" class="section-card mb-4" style="display:none;">
+                                <h5 class="section-title"><i class="fas fa-briefcase me-2"></i>Supervisor Information</h5>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_organization" class="form-label">Organization</label>
-                                        <input type="text" name="organization" class="form-control" 
-                                               id="id_organization" placeholder="Enter organization name">
+                                        <label class="form-label">Organization <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                            <input type="text" name="organization" class="form-control" placeholder="Organization" required>
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_position" class="form-label">Position</label>
-                                        <input type="text" name="position" class="form-control" 
-                                               id="id_position" placeholder="Enter your position">
+                                        <label class="form-label">Position <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-user-tie"></i></span>
+                                            <input type="text" name="position" class="form-control" placeholder="Position" required>
+                                        </div>
                                     </div>
                                 </div>
-
                                 <div class="mb-3">
-                                    <label for="id_supervisor_department" class="form-label">Department (Optional)</label>
-                                    <input type="text" name="supervisor_department" class="form-control" 
-                                           id="id_supervisor_department" placeholder="Enter your department">
+                                    <label class="form-label">Department (Optional)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-sitemap"></i></span>
+                                        <input type="text" name="supervisor_department" class="form-control" placeholder="Department">
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Lecturer Fields -->
-                            <div id="lecturerFields" style="display: none;">
-                                <h5 class="mb-3 border-bottom pb-2">Lecturer Information</h5>
+                            <div id="lecturerFields" class="section-card mb-4" style="display:none;">
+                                <h5 class="section-title"><i class="fas fa-chalkboard-teacher me-2"></i>Lecturer Information</h5>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_staff_id" class="form-label">Staff ID</label>
-                                        <input type="text" name="staff_id" class="form-control" 
-                                               id="id_staff_id" placeholder="Enter your staff ID">
+                                        <label class="form-label">Staff ID <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                            <input type="text" name="staff_id" class="form-control" placeholder="Staff ID" required>
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_lecturer_department" class="form-label">Department</label>
-                                        <input type="text" name="lecturer_department" class="form-control" 
-                                               id="id_lecturer_department" placeholder="Enter your department">
+                                        <label class="form-label">Department <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                            <input type="text" name="lecturer_department" class="form-control" placeholder="Department" required>
+                                        </div>
                                     </div>
                                 </div>
-
                                 <div class="mb-3">
-                                    <label for="id_faculty" class="form-label">Faculty</label>
-                                    <input type="text" name="faculty" class="form-control" 
-                                           id="id_faculty" placeholder="Enter your faculty">
-                                </div>
-                            </div>
-
-                            <!-- Passwords with toggle -->
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_password1" class="form-label">Password</label>
+                                    <label class="form-label">Faculty <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <input type="password" name="password1" autocomplete="new-password" 
-                                            class="form-control" id="id_password1" placeholder="Create a password" required>
-                                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="id_password1">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_password2" class="form-label">Confirm Password</label>
-                                    <div class="input-group">
-                                        <input type="password" name="password2" autocomplete="new-password" 
-                                            class="form-control" id="id_password2" placeholder="Confirm your password" required>
-                                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="id_password2">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
+                                        <span class="input-group-text"><i class="fas fa-landmark"></i></span>
+                                        <input type="text" name="faculty" class="form-control" placeholder="Faculty" required>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="termsAgree" required>
-                                <label class="form-check-label" for="termsAgree">
-                                    I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-                                </label>
+                            <!-- Password Section -->
+                            <div class="section-card mb-4">
+                                <h5 class="section-title"><i class="fas fa-lock me-2"></i>Security</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Password <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                            <input type="password" name="password1" class="form-control" placeholder="Password" id="password1" required>
+                                            <button type="button" class="btn btn-outline-secondary toggle-password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Minimum 8 characters with letters and numbers</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                            <input type="password" name="password2" class="form-control" placeholder="Confirm Password" id="password2" required>
+                                            <button type="button" class="btn btn-outline-secondary toggle-password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                            <!-- Terms Agreement -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="termsAgree" required>
+                                    <label class="form-check-label" for="termsAgree">
+                                        I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a> <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="invalid-feedback">You must agree to the terms and conditions.</div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg py-3">
+                                    <i class="fas fa-user-plus me-2"></i>Create Account
+                                </button>
                             </div>
                         </form>
 
                         <div class="text-center mt-4">
-                            <p class="mb-0">Already have an account? <a href="{% url 'accounts:login' %}">Sign in here</a></p>
+                            <p class="mb-0">Already have an account? 
+                                <a href="{% url 'accounts:login' %}" class="text-primary fw-semibold">Sign in here</a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -204,109 +291,226 @@
 </div>
 
 <style>
-.auth-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
+.auth-container { 
+    min-height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    background: linear-gradient(135deg, #ecedf1 0%, #f7f5f8 100%);
     padding: 2rem 0;
-    background: linear-gradient(135deg, #f5f7fb 0%, #c3cfe2 100%);
+}
+
+.auth-card { 
+    border-radius: 20px; 
+    overflow: hidden; 
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.section-card {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1.5rem;
+    border-left: 4px solid #667eea;
+}
+
+.section-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+}
+
+.form-check-card {
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.form-check-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.form-check-input:checked + .form-check-label .form-check-card {
+    border-color: #667eea;
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+.card-type {
+    padding: 0.5rem;
+}
+
+.text-gradient {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.input-group-text {
+    background-color: #fff;
+    border-right: none;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: #667eea;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.auth-icon {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-10px);}
+    60% {transform: translateY(-5px);}
+}
+
+@media (max-width: 768px) {
+    .auth-card {
+        margin: 1rem;
+    }
+    .card-body {
+        padding: 2rem !important;
+    }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle profile fields
-    const userTypeRadios = document.querySelectorAll('input[name="user_type"]');
     const studentFields = document.getElementById('studentFields');
     const supervisorFields = document.getElementById('supervisorFields');
     const lecturerFields = document.getElementById('lecturerFields');
+    const radios = document.querySelectorAll('input[name="user_type"]');
 
-    function toggleProfileFields() {
-        const selectedType = document.querySelector('input[name="user_type"]:checked').value;
-        studentFields.style.display = 'none';
-        supervisorFields.style.display = 'none';
-        lecturerFields.style.display = 'none';
-        document.querySelectorAll('#studentFields input, #supervisorFields input, #lecturerFields input').forEach(input => {
-            input.removeAttribute('required');
-        });
-        if (selectedType === '1') {
-            studentFields.style.display = 'block';
-            document.querySelectorAll('#studentFields input').forEach(input => input.setAttribute('required','required'));
-        } else if (selectedType === '2') {
-            supervisorFields.style.display = 'block';
-            document.querySelectorAll('#supervisorFields input').forEach(input => input.setAttribute('required','required'));
-        } else if (selectedType === '3') {
-            lecturerFields.style.display = 'block';
-            document.querySelectorAll('#lecturerFields input').forEach(input => input.setAttribute('required','required'));
+    function toggleFields() {
+        const val = document.querySelector('input[name="user_type"]:checked').value;
+        studentFields.style.display = supervisorFields.style.display = lecturerFields.style.display = 'none';
+        studentFields.querySelectorAll('input, select').forEach(i => i.required = false);
+        supervisorFields.querySelectorAll('input').forEach(i => i.required = false);
+        lecturerFields.querySelectorAll('input').forEach(i => i.required = false);
+
+        if(val === '1') { 
+            studentFields.style.display='block'; 
+            studentFields.querySelectorAll('input, select').forEach(i=>i.required=true);
+        }
+        else if(val === '2') { 
+            supervisorFields.style.display='block'; 
+            supervisorFields.querySelectorAll('input').forEach(i=>i.required=true);
+        }
+        else if(val === '3') { 
+            lecturerFields.style.display='block'; 
+            lecturerFields.querySelectorAll('input').forEach(i=>i.required=true);
         }
     }
 
-    userTypeRadios.forEach(radio => radio.addEventListener('change', toggleProfileFields));
-    toggleProfileFields();
+    radios.forEach(r => r.addEventListener('change', toggleFields));
+    toggleFields();
 
     // Password toggle
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', () => {
-            const input = document.getElementById(button.dataset.target);
-            if(input.type === 'password') {
-                input.type = 'text';
-                button.querySelector('i').classList.replace('fa-eye','fa-eye-slash');
-            } else {
-                input.type = 'password';
-                button.querySelector('i').classList.replace('fa-eye-slash','fa-eye');
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+        btn.addEventListener('click', function(){
+            const input = this.parentElement.querySelector('input');
+            const icon = this.querySelector('i');
+            if(input.type === 'password'){ 
+                input.type='text'; 
+                icon.classList.replace('fa-eye','fa-eye-slash'); 
+            }
+            else { 
+                input.type='password'; 
+                icon.classList.replace('fa-eye-slash','fa-eye'); 
             }
         });
     });
 
-    // Username availability check
-    const usernameInput = document.getElementById('id_username');
-    const feedback = document.getElementById('usernameFeedback');
-    let usernameTimer;
+    // Dynamic University -> Department -> Course
+    const universitySelect = document.getElementById('university');
+    const departmentSelect = document.getElementById('department');
+    const courseSelect = document.getElementById('course');
 
-    usernameInput.addEventListener('input', () => {
-        clearTimeout(usernameTimer);
-        feedback.style.display = 'none';
+    const departments = {
+        mksu: ['Engineering','Education','Agriculture','Health Sciences','Business'],
+        uon: ['Agriculture','Arts','Business','Education','Engineering','Health Sciences','Law','Science'],
+        ku: ['Education','Humanities','Social Sciences','Business'],
+        jkuat: ['Engineering','Agriculture','Health Sciences','Business'],
+        mku: ['Business','Education','Health Sciences','Social Sciences'],
+        strathmore: ['Business','IT','Law'],
+        daystar: ['Education','Communication','Business'],
+        usiu: ['Business','International Relations','IT'],
+        cuea: ['Theology','Business','Law']
+    };
 
-        usernameTimer = setTimeout(() => {
-            const username = usernameInput.value.trim();
-            if (username.length > 0) {
-                fetch("{% url 'accounts:check_username' %}?username=" + encodeURIComponent(username))
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.is_taken) {
-                            feedback.textContent = "This username is already taken. Please choose another.";
-                            feedback.style.display = 'block';
-                            usernameInput.classList.add('is-invalid');
-                        } else {
-                            feedback.textContent = "";
-                            feedback.style.display = 'none';
-                            usernameInput.classList.remove('is-invalid');
-                            usernameInput.classList.add('is-valid');
-                        }
-                    });
-            }
-        }, 500);
+    const courses = {
+        Agriculture: ['Agricultural Economics','Food Science','Crop Protection'],
+        Arts: ['Linguistics','Philosophy','History'],
+        Business: ['Business Administration','Accounting','Marketing'],
+        Education: ['Primary Education','Secondary Education'],
+        Engineering: ['Mechanical Engineering','Civil Engineering','Electrical Engineering'],
+        Health_Sciences: ['Nursing','Public Health','Clinical Medicine'],
+        Law: ['Bachelor of Laws (LLB)'],
+        Science: ['Physics','Chemistry','Biology'],
+        IT: ['Computer Science','Information Technology'],
+        Humanities: ['History','Philosophy','Languages'],
+        Social_Sciences: ['Sociology','Psychology','Political Science'],
+        Communication: ['Mass Communication','Journalism'],
+        Theology: ['Divinity','Religious Studies'],
+        International_Relations: ['IR and Diplomacy']
+    };
+
+    universitySelect.addEventListener('change', function() {
+        const uni = universitySelect.value;
+        departmentSelect.innerHTML = '<option value="">Select Department</option>';
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        if(departments[uni]) {
+            departments[uni].forEach(dep => {
+                const option = document.createElement('option');
+                option.value = dep;
+                option.textContent = dep;
+                departmentSelect.appendChild(option);
+            });
+        }
+    });
+
+    departmentSelect.addEventListener('change', function() {
+        const dep = departmentSelect.value.replace(/ /g,'_');
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        if(courses[dep]) {
+            courses[dep].forEach(course => {
+                const option = document.createElement('option');
+                option.value = course;
+                option.textContent = course;
+                courseSelect.appendChild(option);
+            });
+        }
     });
 
     // Form validation
-    const form = document.getElementById('registrationForm');
-    if(form){
-        form.addEventListener('submit', function(event){
-            if(!form.checkValidity() || usernameInput.classList.contains('is-invalid')){
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    }
-
-    // Django messages popup with redirect
-    {% if messages %}
-        {% for message in messages %}
-            alert("{{ message|escapejs }}");
-        {% endfor %}
-        window.location.href = "{% url 'accounts:login' %}";
-    {% endif %}
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
 });
 </script>
 {% endblock %}

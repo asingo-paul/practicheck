@@ -61,6 +61,19 @@
 
         <!-- Main Content -->
         <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
+
+            <!-- Alerts -->
+            {% if messages %}
+            <div class="mb-3">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Header with Gradient -->
             <div class="logbook-container p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center">
@@ -72,10 +85,20 @@
                         <p class="mb-0">Track your daily activities and progress</p>
                     </div>
                     <div class="btn-group">
+                        <!-- New Entry -->
                         <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" 
                            class="btn btn-light me-2">
                             <i class="fas fa-plus me-1"></i> New Entry
                         </a>
+
+                        <!-- Upload Report -->
+                        <a href="{% if reports_count < 2 %}{% url 'attachments:upload_report' attachment_id=attachment.id %}{% else %}#{% endif %}" 
+                           class="btn btn-light me-2 {% if reports_count >= 2 %}disabled{% endif %}" 
+                           {% if reports_count >= 2 %}title="Maximum of 2 reports already uploaded"{% endif %}>
+                            <i class="fas fa-upload me-1"></i> Upload Report
+                        </a>
+
+                        <!-- Export -->
                         <div class="dropdown">
                             <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-download me-1"></i> Export
@@ -121,7 +144,7 @@
             <div class="row">
                 <!-- Logbook Entries -->
                 <div class="col-lg-8">
-                    <div class="card shadow">
+                    <div class="card shadow mb-4">
                         <div class="card-header bg-white">
                             <h5 class="m-0 font-weight-bold text-primary">
                                 <i class="fas fa-list me-2"></i>
@@ -187,6 +210,46 @@
                             {% endif %}
                         </div>
                     </div>
+
+                    <!-- Reports Section -->
+                    <div class="card shadow">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Uploaded Reports
+                            </h5>
+                            <a href="{% if reports_count < 2 %}{% url 'attachments:upload_report' attachment_id=attachment.id %}{% else %}#{% endif %}" 
+                               class="btn btn-sm btn-primary {% if reports_count >= 2 %}disabled{% endif %}" 
+                               {% if reports_count >= 2 %}title="Maximum of 2 reports already uploaded"{% endif %}>
+                                <i class="fas fa-upload me-1"></i> Upload Report
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if reports %}
+                                <ul class="list-group">
+                                    {% for report in reports %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="fas fa-file me-2"></i>
+                                            <a href="{{ report.file.url }}" target="_blank">
+                                                {{ report.file.name|slice:":40" }}
+                                            </a>
+                                        </span>
+                                        <span class="badge bg-info text-dark">
+                                            {{ report.uploaded_at|date:"M d, Y H:i" }}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <p class="mt-2 text-muted small">({{ reports_count }}/2 uploaded)</p>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-file-upload fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No reports uploaded yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Supervisor Panel -->
@@ -205,14 +268,28 @@
                         </div>
                         <div class="card-body">
                             <div class="progress mb-2" style="height: 10px;">
-                                {% widthratio progress_percentage 1 100 as progress %}
                                 <div class="progress-bar" role="progressbar" 
-                                     style="width: {{ progress }}%;" 
-                                     aria-valuenow="{{ progress }}" 
+                                     style="width: {{ attachment.progress_percentage }}%;" 
+                                     aria-valuenow="{{ attachment.progress_percentage }}" 
                                      aria-valuemin="0" 
                                      aria-valuemax="100"></div>
                             </div>
-                            <small class="text-muted">{{ progress }}% complete</small>
+                            <small class="text-muted">
+                                {{ attachment.progress_percentage }}% complete
+                                ({{ attachment.days_completed }} of {{ total_days }} days)
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                {% if attachment.days_remaining > 0 %}
+                                    {{ attachment.days_remaining }} days remaining
+                                {% else %}
+                                    Attachment completed
+                                {% endif %}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                Dates: {{ attachment.start_date }} to {{ attachment.end_date }}
+                            </small>
                         </div>
                     </div>
 
