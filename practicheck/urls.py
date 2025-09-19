@@ -33,7 +33,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # App urls
-    path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
+    # path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
+    path("accounts/", include("accounts.urls")),
     path("attachments/", include(("attachments.urls", "attachments"), namespace="attachments")),
     path("evaluations/", include(("evaluations.urls", "evaluations"), namespace="evaluations")),
     path("accounts/", include("django.contrib.auth.urls")),
