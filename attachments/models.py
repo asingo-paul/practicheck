@@ -1,4 +1,3 @@
-
 # attachments/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -7,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -31,6 +31,7 @@ class Attachment(models.Model):
     supervisor_phone = models.CharField(max_length=15, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
+    report = models.FileField(upload_to="reports/", blank=True, null=True)
     status = models.CharField(max_length=20, choices=(
         ('pending', 'Pending Approval'),
         ('approved', 'Approved'),
@@ -46,39 +47,72 @@ class Attachment(models.Model):
     
     @property
     def is_active(self):
-        return self.status in ['approved', 'ongoing']
+        """Check if attachment is currently active"""
+        if not self.start_date or not self.end_date:
+            return False
+        
+        today = timezone.now().date()
+        return self.start_date <= today <= self.end_date and self.status in ['approved', 'ongoing']
 
     @property
     def days_completed(self):
-        """Number of days completed in the attachment"""
-        if self.status in ['approved', 'ongoing']:
-            completed = (timezone.now().date() - self.start_date).days
-            return max(0, min(completed, (self.end_date - self.start_date).days))
-        return 0
+        """Calculate days completed based on actual dates"""
+        if not self.start_date or not self.end_date:
+            return 0
+            
+        today = timezone.now().date()
+            
+        if today < self.start_date:
+            # Attachment hasn't started yet
+            return 0
+        elif today > self.end_date:
+            # Attachment has ended
+            return (self.end_date - self.start_date).days
+        else:
+            # Attachment is ongoing
+            return (today - self.start_date).days
 
     @property
     def total_days(self):
         """Total number of days in the attachment"""
+        if not self.start_date or not self.end_date:
+            return 0
         return (self.end_date - self.start_date).days
 
     @property
     def progress_percentage(self):
-        """Progress percentage (0-100)"""
-        if self.total_days > 0:
-            return min(100, max(0, int((self.days_completed / self.total_days) * 100)))
-        return 0
+        """Calculate progress percentage based on actual dates"""
+        if not self.start_date or not self.end_date:
+            return 0
+        
+        total_days = self.total_days
+        if total_days <= 0:
+            return 100 if self.status == 'completed' else 0
+        
+        days_completed = self.days_completed
+        progress = min(100, max(0, (days_completed / total_days) * 100))
+        return round(progress)
     
     @property
     def days_remaining(self):
-        from django.utils import timezone
-        if self.end_date and self.status in ['approved', 'ongoing']:
-            remaining = (self.end_date - timezone.now().date()).days
-            return max(0, remaining)
-        return 0
-
+        """Calculate days remaining based on actual dates"""
+        if not self.start_date or not self.end_date:
+            return 0
+        
+        today = timezone.now().date()
+        
+        if today < self.start_date:
+            # Attachment hasn't started yet
+            return (self.end_date - self.start_date).days
+        elif today > self.end_date:
+            # Attachment has ended
+            return 0
+        else:
+            # Attachment is ongoing
+            return (self.end_date - today).days
 
     class Meta:
-         # this prevent multiple attachments per student at the database level
+        # this prevent multiple attachments per student at the database level
         constraints = [
             models.UniqueConstraint(fields=['student'], name='unique_student_attachment')
         ]
@@ -133,3 +167,11 @@ def send_supervisor_notification(sender, instance, created, **kwargs):
             [instance.attachment.supervisor_email],
             fail_silently=True,
         )
+
+class ReportUpload(models.Model):
+    attachment = models.ForeignKey("Attachment", on_delete=models.CASCADE, related_name="reports")
+    file = models.FileField(upload_to="reports/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.attachment.organization} - {self.file.name}"

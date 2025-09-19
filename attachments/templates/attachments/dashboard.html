@@ -61,25 +61,17 @@
 
         <!-- Main Content -->
         <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
-            <!-- Welcome Banner with Create Button -->
+            <!-- Welcome Banner -->
             <div class="welcome-banner text-white rounded p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h2 class="mb-2">Welcome back, {{ user.get_full_name }}! 👋</h2>
                         <p class="mb-0">Manage your industrial attachments and track your progress.</p>
                     </div>
-                    <div class="col-md-4 text-md-end">
-                        <a href="{% if not attachments %}{% url 'attachments:create_attachment' %}{% else %}#{% endif %}"
-                           class="btn btn-light btn-lg {% if attachments %}disabled{% endif %}"
-                           {% if attachments %}onclick="return false;" title="You already have an attachment"{% endif %}>
-                            <i class="fas fa-plus me-2"></i>New Attachment
-                        </a>
-                    </div>
                 </div>
             </div>
 
-            <!-- Quick Actions Row -->
-            {% if attachments %}
+            <!-- Quick Actions -->
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card shadow">
@@ -91,23 +83,42 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex flex-wrap gap-2">
-                                {% for attachment in attachments %}
-                                    {% if attachment.is_active %}
-                                    <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" 
-                                       class="quick-action-btn">
-                                        <i class="fas fa-plus me-1"></i> Today's Entry - {{ attachment.organization }}
+                                {% if attachments %}
+                                    {% for attachment in attachments %}
+                                        {% if attachment.is_active %}
+                                            <!-- Today's Entry -->
+                                            <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}"
+                                               class="quick-action-btn">
+                                                <i class="fas fa-plus me-1"></i> Today's Entry - {{ attachment.organization }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <!-- Disabled New Attachment -->
+                                    <button class="quick-action-btn" disabled title="You already have an attachment">
+                                        <i class="fas fa-building me-1"></i> New Attachment
+                                    </button>
+
+                                    {% for attachment in attachments %}
+                                        {% if attachment.is_active %}
+                                            <!-- View Logbook -->
+                                            <a href="{% url 'attachments:logbook' attachment_id=attachment.id %}"
+                                               class="quick-action-btn">
+                                                <i class="fas fa-book me-1"></i> View Logbook
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- If no attachments, show New Attachment -->
+                                    <a href="{% url 'attachments:create_attachment' %}" class="quick-action-btn">
+                                        <i class="fas fa-building me-1"></i> New Attachment
                                     </a>
-                                    {% endif %}
-                                {% endfor %}
-                                <button class="quick-action-btn" disabled title="You already have an attachment">
-                                    <i class="fas fa-building me-1"></i> New Attachment
-                                </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
 
             <!-- My Attachments Section -->
             <div class="row mb-4">

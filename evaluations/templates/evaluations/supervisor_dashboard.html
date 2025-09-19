@@ -1,4 +1,3 @@
-
 {% extends 'base_supervisor.html' %}
 {% load static %}
 
@@ -124,9 +123,11 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        Pending Evaluations
+                                        Pending Approvals
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_evaluations }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ supervised_attachments|length }}
+                                    </div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-clock fa-2x text-gray-300"></i>
@@ -197,9 +198,38 @@
                                             <td>{{ attachment.start_date }}</td>
                                             <td>{{ attachment.end_date }}</td>
                                             <td>
-                                                <span class="badge bg-{% if attachment.status == 'ongoing' %}success{% elif attachment.status == 'completed' %}info{% else %}warning{% endif %}">
-                                                    {{ attachment.status|title }}
+                                                <span class="badge bg-{% if attachment.status == 'approved' %}success
+                                                          {% elif attachment.status == 'ongoing' %}info
+                                                          {% elif attachment.status == 'completed' %}primary
+                                                          {% elif attachment.status == 'cancelled' %}danger
+                                                          {% else %}warning{% endif %}">
+                                                    {{ attachment.get_status_display }}
                                                 </span>
+                                                
+                                                {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
+                                                <br>
+                                                <small class="text-muted">
+                                                    Progress: {{ attachment.progress_percentage }}%
+                                                    {% if attachment.progress_percentage == 100 %}
+                                                    - Completed
+                                                    {% else %}
+                                                    - {{ attachment.days_remaining }} days left
+                                                    {% endif %}
+                                                </small>
+                                                
+                                                <!-- Progress bar for active attachments -->
+                                                {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
+                                                <div class="progress mt-1" style="height: 5px;">
+                                                    <div class="progress-bar bg-success" 
+                                                         style="width: {{ attachment.progress_percentage }}%"
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ attachment.progress_percentage }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {% if attachment.supervisor_evaluation %}
@@ -209,13 +239,34 @@
                                                 {% endif %}
                                             </td>
                                             <td>
+                                                {% if attachment.status == 'pending' %}
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-success approve-btn" 
+                                                            data-attachment-id="{{ attachment.id }}"
+                                                            data-bs-toggle="tooltip" title="Approve Attachment">
+                                                        <i class="fas fa-check me-1"></i> Approve
+                                                    </button>
+                                                    <button class="btn btn-danger reject-btn" 
+                                                            data-attachment-id="{{ attachment.id }}"
+                                                            data-bs-toggle="tooltip" title="Reject Attachment">
+                                                        <i class="fas fa-times me-1"></i> Reject
+                                                    </button>
+                                                </div>
+                                                {% endif %}
+                                                
                                                 <a href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}" 
-                                                   class="btn btn-sm btn-primary">
+                                                   class="btn btn-sm btn-primary mt-1">
                                                     <i class="fas fa-edit me-1"></i> Evaluate
                                                 </a>
-                                                <a href="#" class="btn btn-sm btn-outline-secondary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
+                                                
+                                                {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">
+                                                        Started: {{ attachment.start_date }}<br>
+                                                        Ends: {{ attachment.end_date }}
+                                                    </small>
+                                                </div>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -327,6 +378,78 @@ document.addEventListener('DOMContentLoaded', function() {
         responsive: true,
         order: [[0, 'asc']]
     });
+
+    // Approval functionality
+    $('.approve-btn').click(function() {
+        const attachmentId = $(this).data('attachment-id');
+        const button = $(this);
+        
+        if (confirm('Are you sure you want to approve this attachment? The student will be notified and their progress will start tracking.')) {
+            $.ajax({
+                url: '{% url "attachments:approve_attachment" 0 %}'.replace('0', attachmentId),
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Show success message
+                        showNotification('Success', response.message, 'success');
+                        
+                        // Reload the page after a short delay
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showNotification('Error', response.error, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    showNotification('Error', response?.error || 'An error occurred while approving the attachment', 'error');
+                }
+            });
+        }
+    });
+
+    // Rejection functionality
+    $('.reject-btn').click(function() {
+        const attachmentId = $(this).data('attachment-id');
+        const button = $(this);
+        
+        if (confirm('Are you sure you want to reject this attachment? The student will be notified.')) {
+            $.ajax({
+                url: '{% url "attachments:reject_attachment" 0 %}'.replace('0', attachmentId),
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('Success', response.message, 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showNotification('Error', response.error, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    showNotification('Error', response?.error || 'An error occurred while rejecting the attachment', 'error');
+                }
+            });
+        }
+    });
+
+    // Notification function (you can replace with toast library)
+    function showNotification(title, message, type) {
+        // Simple alert for now - you can integrate a toast library like Toastr
+        alert(`${title}: ${message}`);
+    }
+
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
 });
 </script>
 {% endblock %}

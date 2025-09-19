@@ -1,4 +1,3 @@
-<!-- templates/accounts/login.html -->
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
@@ -9,17 +8,21 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-5 col-md-7">
-                <div class="auth-card card shadow">
+                <div class="auth-card card shadow-lg border-0">
                     <div class="card-body p-5">
                         <div class="auth-header text-center mb-4">
-                            <h2 class="fw-bold">Welcome Back</h2>
+                            <div class="auth-icon mb-3">
+                                <i class="fas fa-sign-in-alt fa-3x text-primary"></i>
+                            </div>
+                            <h2 class="fw-bold text-gradient">Welcome Back</h2>
                             <p class="text-muted">Sign in to your PractiCheck account</p>
                         </div>
 
                         {% if messages %}
-                        <div class="messages mb-3">
+                        <div class="messages mb-4">
                             {% for message in messages %}
                             <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
                                 {{ message }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
@@ -29,56 +32,59 @@
 
                         <form method="post" class="needs-validation" novalidate>
                             {% csrf_token %}
+                            {{ form.non_field_errors }}
                             
-                            <div class="mb-3">
-                                <label for="id_username" class="form-label">Username or Email</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" name="username" autofocus autocapitalize="none" autocomplete="username" 
-                                           maxlength="150" class="form-control" required id="id_username" 
-                                           placeholder="Enter your username or email">
+                            <div class="mb-4">
+                                <label for="id_username" class="form-label">Student/Staff ID <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="fas fa-id-badge"></i></span>
+                                    <input type="text" name="username" autofocus autocapitalize="none" autocomplete="username"
+                                           maxlength="150" class="form-control" required id="id_username"
+                                           placeholder="Enter your Student or Staff ID">
                                 </div>
+                                <div class="invalid-feedback">Please enter your ID.</div>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="id_password" class="form-label">Password</label>
-                                <div class="input-group">
+
+                            <div class="mb-4">
+                                <label for="id_password" class="form-label">Password <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg">
                                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                    <input type="password" name="password" autocomplete="current-password" 
+                                    <input type="password" name="password" autocomplete="current-password"
                                            class="form-control" required id="id_password" placeholder="Enter your password">
                                     <button class="btn btn-outline-secondary toggle-password" type="button">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
+                                <div class="invalid-feedback">Please enter your password.</div>
                             </div>
-                            
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="rememberMe">
-                                <label class="form-check-label" for="rememberMe">Remember me</label>
-                                <a href="{% url 'accounts:password_reset' %}" class="float-end">Forgot Password?</a>
+
+                            <div class="mb-4 d-flex justify-content-between align-items-center">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                                </div>
+                                <a href="{% url 'accounts:password_reset' %}" class="text-primary text-decoration-none">
+                                    <i class="fas fa-key me-1"></i>Forgot Password?
+                                </a>
                             </div>
-                            
+
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+                                <button type="submit" class="btn btn-primary btn-lg py-3">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                </button>
                             </div>
                         </form>
-                        
-                        <div class="text-center mt-4">
-                            <p class="mb-0">Don't have an account? <a href="{% url 'accounts:register' %}">Create one here</a></p>
+
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <p class="mb-0">Don't have an account? 
+                                <a href="{% url 'accounts:register' %}" class="text-primary fw-semibold text-decoration-none">Create one here</a>
+                            </p>
                         </div>
-                        
-                        <hr class="my-4">
-                        
-                        <div class="text-center">
-                            <p class="text-muted">Or sign in with</p>
-                            <div class="d-flex justify-content-center gap-3">
-                                <button class="btn btn-outline-primary">
-                                    <i class="fab fa-google me-2"></i> Google
-                                </button>
-                                <button class="btn btn-outline-dark">
-                                    <i class="fab fa-microsoft me-2"></i> Microsoft
-                                </button>
-                            </div>
+
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>Your login is secure and encrypted
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -88,47 +94,96 @@
 </div>
 
 <style>
-.auth-container {
-    min-height: 80vh;
-    display: flex;
-    align-items: center;
+.auth-container { 
+    min-height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    background: linear-gradient(135deg, #f0f1f3 0%, #f4f1f7 100%);
     padding: 2rem 0;
-    background: linear-gradient(135deg, #f5f7fb 0%, #c3cfe2 100%);
 }
 
-.auth-card {
-    border: none;
-    border-radius: 15px;
-    overflow: hidden;
+.auth-card { 
+    border-radius: 20px; 
+    overflow: hidden; 
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
 }
 
-.toggle-password {
-    cursor: pointer;
+.text-gradient {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .input-group-text {
+    background-color: #fff;
+    border-right: none;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: #667eea;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(126, 118, 243, 0.4);
+}
+
+.auth-icon {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-10px);}
+    60% {transform: translateY(-5px);}
+}
+
+.toggle-password { 
+    cursor: pointer; 
+    border-left: none;
+}
+
+.toggle-password:hover {
     background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .auth-card {
+        margin: 1rem;
+    }
+    .card-body {
+        padding: 2rem !important;
+    }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle password visibility
+    // Password toggle
     const togglePassword = document.querySelector('.toggle-password');
     const passwordInput = document.getElementById('id_password');
     
     if (togglePassword && passwordInput) {
         togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            
-            // Toggle eye icon
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
             const icon = this.querySelector('i');
             icon.classList.toggle('fa-eye');
             icon.classList.toggle('fa-eye-slash');
         });
     }
-    
+
     // Form validation
     const form = document.querySelector('.needs-validation');
     if (form) {
@@ -138,8 +193,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 event.stopPropagation();
             }
             form.classList.add('was-validated');
-        }, false);
+        });
     }
+
+    // Add animation to input focus
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('input-focused');
+        });
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('input-focused');
+        });
+    });
 });
 </script>
 {% endblock %}
