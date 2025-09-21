@@ -17,6 +17,15 @@ urlpatterns = [
     path('api/entry/<int:entry_id>/', views.api_entry_detail, name='api_entry_detail'),
     path("<int:attachment_id>/logbook/upload/", views.upload_report, name="upload_report"),
     path('approve/<int:attachment_id>/', views.approve_attachment, name='approve_attachment'),
-    # path('approve/<int:attachment_id>/', views.approve_attachment, name='approve_attachment'),
+    path('approve/<int:attachment_id>/', views.approve_attachment, name='approve_attachment'),
     path('reject/<int:attachment_id>/', views.reject_attachment, name='reject_attachment'),
+    # path("report/delete/<int:report_id>/", views.delete_report, name="delete_report"),
+
+    path('report/', views.report_upload, name='report_upload'),
+    # path('report/delete/<int:report_id>/', views.delete_report, name='delete_report'),
+    path('report/delete/<int:report_id>/', views.delete_report, name='delete_report'),
+    # urls.py
+    
+
+
 ]

@@ -10,6 +10,10 @@ from .forms import AttachmentForm, LogbookEntryForm
 import os
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .models import Report
+from datetime import timedelta
+# from django import requests
+# import requests
 # from .models import Report, Attachment
 # from .forms import ReportForm
 
@@ -375,11 +379,17 @@ def api_entry_detail(request, entry_id):
 def upload_report(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id, student=request.user)
 
+    # # Ensure the attachment has ended before allowing uploads
+    # today = timezone.now().date()
+    # if attachment.end_date and today < attachment.end_date:
+    #     messages.error(request, "You can only upload reports after your attachment period has ended.")
+    #     return redirect("attachments:dashboard")
+
     # Check how many reports exist
     reports = attachment.reports.all()
     if request.method == "POST":
-        if reports.count() >= 2:
-            messages.error(request, "You can only upload a maximum of 2 reports.")
+        if reports.count() >= 10:
+            messages.error(request, "You can only upload a maximum of 5 reports.")
             return redirect("attachments:upload_report", attachment_id=attachment.id)
 
         report_file = request.FILES.get("report")
@@ -395,6 +405,7 @@ def upload_report(request, attachment_id):
             messages.error(request, "Please select a file to upload.")
 
     return render(request, "attachments/upload_report.html", {"attachment": attachment, "reports": reports})
+
 
 
 def is_supervisor(user):
@@ -439,3 +450,75 @@ def reject_attachment(request, attachment_id):
             return JsonResponse({'success': False, 'error': 'Attachment not found'}, status=404)
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
+
+
+
+# @login_required
+# def delete_report(request, report_id):
+#     report = get_object_or_404(ReportUpload, id=report_id, attachment__student=request.user)
+
+#     if request.method == "POST":
+#         report.file.delete(save=False)  # delete file from storage
+#         report.delete()  # delete DB record
+#         messages.success(request, "Report deleted successfully.")
+#         return redirect("attachments:upload_report", attachment_id=report.attachment.id)
+
+#     messages.error(request, "Invalid request.")
+#     return redirect("attachments:upload_report", attachment_id=report.attachment.id)
+
+
+
+
+# def delete_report(request, report_id):
+#     report = get_object_or_404(Report, id=report_id)
+
+#     # Only allow deletion within 10 minutes of upload
+#     time_diff = timezone.now() - report.uploaded_at
+#     if time_diff > timedelta(minutes=10):
+#         messages.error(request, "You can only delete reports shortly after uploading.")
+#         return redirect('attachments:logbook', attachment_id=report.attachment.id)
+
+#     # Delete the file from storage first
+#     report.file.delete(save=False)
+#     report.delete()
+#     messages.success(request, "Report deleted successfully.")
+#     return redirect('attachments:logbook', attachment_id=report.attachment.id)
+
+@login_required
+def report_upload(request):
+    # Get latest report by student
+    report = Report.objects.filter(student=request.user).order_by('-submission_date').first()
+    submissions = Report.objects.filter(student=request.user).order_by('-submission_date')
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        document = request.FILES.get('document')
+
+        if document:
+            # Increment version if report exists
+            version = submissions.count() + 1
+            new_report = Report.objects.create(
+                student=request.user,
+                title=title,
+                document=document,
+                version=version
+            )
+            messages.success(request, "Report submitted successfully.")
+            return redirect('attachments:report_upload')
+
+        else:
+            messages.error(request, "Please upload a valid report.")
+
+    return render(request, 'attachments/report_upload.html', {
+        'report': report,
+        'submissions': submissions
+    })
+
+
+@login_required
+def delete_report(request, report_id):
+    report = get_object_or_404(ReportUpload, id=report_id)  # <-- ReportUpload here
+    attachment_id = report.attachment.id
+    report.delete()
+    messages.success(request, "Report deleted successfully.")
+    return redirect('attachments:logbook', attachment_id=attachment_id)

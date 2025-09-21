@@ -26,6 +26,10 @@ SECRET_KEY = 'django-insecure-@nc!(r_f^kyxn1h(k=mz&=hwt^tsv(5=s2w9&!!rx^3o^t49-9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+if not DEBUG:
+    # Only show custom errors in production
+    handler403 = 'django.views.defaults.permission_denied'
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
@@ -173,3 +177,8 @@ AUTHENTICATION_BACKENDS = [
     'accounts.backend.IDBackend',
     'django.contrib.auth.backends.ModelBackend',  # Keep this as fallback
 ]
+
+# # Authentication Redirects
+LOGIN_URL = '/accounts/login/'               # where @login_required sends users
+# LOGIN_REDIRECT_URL = '/dashboard/'           # where users land after login
+# LOGOUT_REDIRECT_URL = '/accounts/login/'     # where users land after logout
