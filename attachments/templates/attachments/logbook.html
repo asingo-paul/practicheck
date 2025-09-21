@@ -6,49 +6,120 @@
 
 {% block extra_css %}
 <style>
-.logbook-container {
+.logbook-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
-    color: white;
-}
-.entry-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: none;
     border-radius: 12px;
-}
-.entry-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-.stats-card {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+.stat-card {
+    background: white;
     border-radius: 12px;
-    border: none;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 5px;
+}
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+.section-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+.section-header {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
 }
 .supervisor-card {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: white;
     border-radius: 12px;
-    border: none;
+    padding: 20px;
+    margin-bottom: 25px;
 }
-.badge-completed {
+.progress-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+.quick-actions {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+.badge-reviewed {
     background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+    color: white;
 }
 .badge-pending {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
 }
-.progress-bar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-.btn-primary {
+.btn-action {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     border-radius: 8px;
+    color: white;
+    padding: 10px 20px;
 }
-.btn-primary:hover {
+.btn-action:hover {
     background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
     transform: translateY(-2px);
+    color: white;
+}
+.entry-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.entry-table th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e9ecef;
+}
+.entry-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+}
+.entry-table tr:hover {
+    background: #f8f9fa;
+}
+.report-list {
+    list-style: none;
+    padding: 0;
+}
+.report-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.report-list li:last-child {
+    border-bottom: none;
 }
 </style>
 {% endblock %}
@@ -56,286 +127,249 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row">
-        <!-- Sidebar Navigation -->
         {% include 'attachments/partials/student_sidebar.html' %}
 
-        <!-- Main Content -->
         <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
-
-            <!-- Alerts -->
-            {% if messages %}
-            <div class="mb-3">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- Header with Gradient -->
-            <div class="logbook-container p-4 mb-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-1">
-                            <i class="fas fa-book-open me-2"></i>
-                            Logbook - {{ attachment.organization }}
-                        </h2>
-                        <p class="mb-0">Track your daily activities and progress</p>
-                    </div>
-                    <div class="btn-group">
-                        <!-- New Entry -->
-                        <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" 
-                           class="btn btn-light me-2">
-                            <i class="fas fa-plus me-1"></i> New Entry
-                        </a>
-
-                        <!-- Upload Report -->
-                        <a href="{% if reports_count < 2 %}{% url 'attachments:upload_report' attachment_id=attachment.id %}{% else %}#{% endif %}" 
-                           class="btn btn-light me-2 {% if reports_count >= 2 %}disabled{% endif %}" 
-                           {% if reports_count >= 2 %}title="Maximum of 2 reports already uploaded"{% endif %}>
-                            <i class="fas fa-upload me-1"></i> Upload Report
-                        </a>
-
-                        <!-- Export -->
-                        <div class="dropdown">
-                            <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-download me-1"></i> Export
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='pdf' %}">PDF</a></li>
-                                <li><a class="dropdown-item" href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='csv' %}">CSV</a></li>
-                                <li><a class="dropdown-item" href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='json' %}">JSON</a></li>
-                            </ul>
+            <div class="container-fluid py-4">
+                <!-- Header -->
+                <div class="logbook-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1"><i class="fas fa-book-open me-2"></i>Logbook - {{ attachment.organization }}</h2>
+                            <p class="mb-0">Track your daily activities and progress</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Overview -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="stats-card text-center p-3">
-                        <h3 class="mb-0">{{ total_entries }}</h3>
-                        <small>Total Entries</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card text-center p-3">
-                        <h3 class="mb-0">{{ total_hours }}</h3>
-                        <small>Total Hours</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card text-center p-3">
-                        <h3 class="mb-0">{{ attachment.days_remaining }}</h3>
-                        <small>Days Remaining</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card text-center p-3">
-                        <h3 class="mb-0">{{ supervisor_reviews }}</h3>
-                        <small>Supervisor Reviews</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <!-- Logbook Entries -->
-                <div class="col-lg-8">
-                    <div class="card shadow mb-4">
-                        <div class="card-header bg-white">
-                            <h5 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-list me-2"></i>
-                                Logbook Entries
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            {% if entries %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Department/Section</th>
-                                            <th>Tasks</th>
-                                            <th>Hours</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for entry in entries %}
-                                        <tr>
-                                            <td>
-                                                {{ entry.entry_date }}
-                                                <br>
-                                                <small class="text-muted">#{{ entry.id }}</small>
-                                            </td>
-                                            <td>{{ entry.department_section }}</td>
-                                            <td>{{ entry.tasks|truncatewords:3 }}</td>
-                                            <td>{{ entry.hours_worked }}</td>
-                                            <td>
-                                                <span class="badge {% if entry.supervisor_comments %}badge-completed{% else %}badge-pending{% endif %}">
-                                                    {% if entry.supervisor_comments %}Reviewed{% else %}Pending{% endif %}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="{% url 'attachments:edit_logbook_entry' entry_id=entry.id %}" 
-                                                   class="btn btn-sm btn-outline-primary {% if not entry.can_edit %}disabled{% endif %}"
-                                                   {% if not entry.can_edit %}title="Maximum edits reached"{% endif %}>
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-outline-info view-entry" 
-                                                        data-bs-toggle="modal" data-bs-target="#entryModal" 
-                                                        data-entry-id="{{ entry.id }}">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {% else %}
-                            <div class="text-center py-5">
-                                <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No Logbook Entries Yet</h5>
-                                <p class="text-muted">Start adding your daily logbook entries to track your progress.</p>
-                                <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" class="btn btn-primary">
-                                    <i class="fas fa-plus me-2"></i>Add First Entry
-                                </a>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Reports Section -->
-                    <div class="card shadow">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <h5 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-file-alt me-2"></i>
-                                Uploaded Reports
-                            </h5>
+                        <div class="btn-group">
+                            <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" class="btn btn-light me-2">
+                                <i class="fas fa-plus me-1"></i> New Entry
+                            </a>
                             <a href="{% if reports_count < 2 %}{% url 'attachments:upload_report' attachment_id=attachment.id %}{% else %}#{% endif %}" 
-                               class="btn btn-sm btn-primary {% if reports_count >= 2 %}disabled{% endif %}" 
-                               {% if reports_count >= 2 %}title="Maximum of 2 reports already uploaded"{% endif %}>
+                               class="btn btn-light me-2 {% if reports_count >= 2 %}disabled{% endif %}">
                                 <i class="fas fa-upload me-1"></i> Upload Report
                             </a>
-                        </div>
-                        <div class="card-body">
-                            {% if reports %}
-                                <ul class="list-group">
-                                    {% for report in reports %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>
-                                            <i class="fas fa-file me-2"></i>
-                                            <a href="{{ report.file.url }}" target="_blank">
-                                                {{ report.file.name|slice:":40" }}
-                                            </a>
-                                        </span>
-                                        <span class="badge bg-info text-dark">
-                                            {{ report.uploaded_at|date:"M d, Y H:i" }}
-                                        </span>
-                                    </li>
-                                    {% endfor %}
+                            <div class="dropdown">
+                                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-download me-1"></i> Export
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='pdf' %}">PDF</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='csv' %}">CSV</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='json' %}">JSON</a></li>
                                 </ul>
-                                <p class="mt-2 text-muted small">({{ reports_count }}/2 uploaded)</p>
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-file-upload fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted mb-0">No reports uploaded yet.</p>
-                                </div>
-                            {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Supervisor Panel -->
-                <div class="col-lg-4">
-                    <div class="supervisor-card p-3 mb-4">
-                        <h5 class="mb-3"><i class="fas fa-user-tie me-2"></i>Supervisor</h5>
-                        <p class="mb-1"><strong>{{ attachment.supervisor_name }}</strong></p>
-                        <p class="mb-1">{{ attachment.supervisor_email }}</p>
-                        <p class="mb-0">{{ attachment.supervisor_phone }}</p>
+                <!-- Stats Overview -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ total_entries }}</div>
+                        <div class="stat-label">Total Entries</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ total_hours }}</div>
+                        <div class="stat-label">Total Hours</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ attachment.days_remaining }}</div>
+                        <div class="stat-label">Days Remaining</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ supervisor_reviews }}</div>
+                        <div class="stat-label">Supervisor Reviews</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Left Column -->
+                    <div class="col-lg-8">
+                        <!-- Logbook Entries Section -->
+                        <div class="section-card">
+                            <div class="section-header">
+                                <h4 class="mb-0"><i class="fas fa-list me-2"></i>Logbook Entries</h4>
+                            </div>
+                            <div class="section-body">
+                                {% if entries %}
+                                <div class="table-responsive">
+                                    <table class="entry-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Department/Section</th>
+                                                <th>Tasks</th>
+                                                <th>Hours</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for entry in entries %}
+                                            <tr>
+                                                <td>{{ entry.entry_date|date:"M. d, Y" }}<br><small class="text-muted">#{{ entry.id }}</small></td>
+                                                <td>{{ entry.department_section }}</td>
+                                                <td>{{ entry.tasks|truncatewords:3 }} "..."</td>
+                                                <td>{{ entry.hours_worked }}</td>
+                                                <td>
+                                                    <span class="badge {% if entry.supervisor_comments %}badge-reviewed{% else %}badge-pending{% endif %}">
+                                                        {% if entry.supervisor_comments %}Reviewed{% else %}Pending{% endif %}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'attachments:edit_logbook_entry' entry_id=entry.id %}" 
+                                                       class="btn btn-sm btn-outline-primary {% if not entry.can_edit %}disabled{% endif %}"
+                                                       title="Edit entry">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-info view-entry" 
+                                                            data-bs-toggle="modal" data-bs-target="#entryModal" 
+                                                            data-entry-id="{{ entry.id }}"
+                                                            title="View details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Logbook Entries Yet</h5>
+                                    <p class="text-muted">Start adding your daily logbook entries to track your progress.</p>
+                                    <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" class="btn btn-action">
+                                        <i class="fas fa-plus me-2"></i>Add First Entry
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Reports Section -->
+                        <div class="section-card">
+                            <div class="section-header d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0"><i class="fas fa-file-alt me-2"></i>Uploaded Reports</h4>
+                                <a href="{% if reports_count < 10 %}{% url 'attachments:upload_report' attachment_id=attachment.id %}{% else %}#{% endif %}" 
+                                   class="btn btn-sm btn-action {% if reports_count >= 10 %}disabled{% endif %}">
+                                    <i class="fas fa-upload me-1"></i> Upload Report
+                                </a>
+                            </div>
+                            <div class="section-body">
+                                {% if reports %}
+                                    <ul class="report-list">
+                                        {% for report in reports %}
+                                        <li class="d-flex justify-content-between align-items-center">
+                                            <span>
+                                                <i class="fas fa-file me-2"></i>
+                                                <a href="{{ report.file.url }}" target="_blank" class="text-decoration-none">
+                                                    {{ report.file.name|slice:":40" }}
+                                                </a>
+                                            </span>
+                                            <span class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-info text-dark">
+                                                    {{ report.uploaded_at|date:"M d, Y H:i" }}
+                                                </span>
+                                                {% if report.uploaded_at|timesince < "10 minutes" %}
+                                                {% for report in attachment.reports.all %}
+                                                <form method="POST" action="{% url 'attachments:delete_report' report_id=report.id %}" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete report">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                                {% endfor %}
+
+                                                {% endif %}
+                                            </span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    <p class="mt-2 text-muted small">({{ reports_count }}/10 uploaded)</p>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-file-upload fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">No reports uploaded yet.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Progress Chart -->
-                    <div class="card shadow mb-4">
-                        <div class="card-header bg-white">
-                            <h6 class="m-0 font-weight-bold">Progress Overview</h6>
+                    <!-- Right Column -->
+                    <div class="col-lg-4">
+                        <!-- Supervisor Card -->
+                        <div class="supervisor-card">
+                            <h5 class="mb-3"><i class="fas fa-user-tie me-2"></i>Supervisor</h5>
+                            <p class="mb-1"><strong>{{ attachment.supervisor_name }}</strong></p>
+                            <p class="mb-1">{{ attachment.supervisor_email }}</p>
+                            <p class="mb-0">{{ attachment.supervisor_phone }}</p>
                         </div>
-                        <div class="card-body">
-                            <div class="progress mb-2" style="height: 10px;">
+
+                        <!-- Progress Overview -->
+                        <div class="progress-card">
+                            <h6 class="mb-3"><i class="fas fa-chart-line me-2"></i>Progress Overview</h6>
+                            <div class="progress mb-3" style="height: 10px;">
                                 <div class="progress-bar" role="progressbar" 
                                      style="width: {{ attachment.progress_percentage }}%;" 
                                      aria-valuenow="{{ attachment.progress_percentage }}" 
                                      aria-valuemin="0" 
                                      aria-valuemax="100"></div>
                             </div>
-                            <small class="text-muted">
+                            <p class="small mb-1">
                                 {{ attachment.progress_percentage }}% complete
                                 ({{ attachment.days_completed }} of {{ total_days }} days)
-                            </small>
-                            <br>
-                            <small class="text-muted">
+                            </p>
+                            <p class="small mb-1">
                                 {% if attachment.days_remaining > 0 %}
                                     {{ attachment.days_remaining }} days remaining
                                 {% else %}
                                     Attachment completed
                                 {% endif %}
-                            </small>
-                            <br>
-                            <small class="text-muted">
-                                Dates: {{ attachment.start_date }} to {{ attachment.end_date }}
-                            </small>
+                            </p>
+                            <p class="small mb-0 text-muted">
+                                Dates: {{ attachment.start_date|date:"M. d, Y" }} to {{ attachment.end_date|date:"M. d, Y" }}
+                            </p>
                         </div>
-                    </div>
 
-                    <!-- Quick Actions -->
-                    <div class="card shadow">
-                        <div class="card-header bg-white">
-                            <h6 class="m-0 font-weight-bold">Quick Actions</h6>
-                        </div>
-                        <div class="card-body">
-                            <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" 
-                               class="btn btn-primary w-100 mb-2">
-                                <i class="fas fa-plus me-1"></i> Add New Entry
-                            </a>
-                            <a href="{% url 'attachments:attachment_detail' attachment_id=attachment.id %}" 
-                               class="btn btn-outline-primary w-100 mb-2">
-                                <i class="fas fa-info-circle me-1"></i> View Details
-                            </a>
-                            <a href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='pdf' %}" 
-                               class="btn btn-outline-secondary w-100">
-                                <i class="fas fa-download me-1"></i> Export PDF
-                            </a>
+                        <!-- Quick Actions -->
+                        <div class="quick-actions">
+                            <h6 class="mb-3"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'attachments:logbook_entry' attachment_id=attachment.id %}" 
+                                   class="btn btn-action mb-2">
+                                    <i class="fas fa-plus me-1"></i> Add New Entry
+                                </a>
+                                <a href="{% url 'attachments:attachment_detail' attachment_id=attachment.id %}" 
+                                   class="btn btn-outline-primary mb-2">
+                                    <i class="fas fa-info-circle me-1"></i> View Details
+                                </a>
+                                <a href="{% url 'attachments:export_logbook' attachment_id=attachment.id format_type='pdf' %}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-download me-1"></i> Export PDF
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
-</div>
 
-<!-- Entry Detail Modal -->
-<div class="modal fade" id="entryModal" tabindex="-1" aria-labelledby="entryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="entryModalLabel">Logbook Entry Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Entry Detail Modal -->
+            <div class="modal fade" id="entryModal" tabindex="-1" aria-labelledby="entryModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="entryModalLabel">Logbook Entry Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="entryModalBody">
+                            Loading entry details...
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body" id="entryModalBody">
-                Loading entry details...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

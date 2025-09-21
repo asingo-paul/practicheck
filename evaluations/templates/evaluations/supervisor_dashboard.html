@@ -16,12 +16,12 @@
                             Supervisor Dashboard
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="{% url 'attachments:dashboard' %}">
                             <i class="fas fa-user me-2"></i>
                             Student View
                         </a>
-                    </li>
+                    </li> -->
                     <li class="nav-item mt-4">
                         <a class="nav-link text-warning" href="#">
                             <i class="fas fa-clipboard-list me-2"></i>
@@ -145,7 +145,9 @@
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                         Average Rating Given
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">4.2/5</div>
+                                    <!-- <div class="h5 mb-0 font-weight-bold text-gray-800">4.2/5</div> -->
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ average_rating }}</div>
+
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-star fa-2x text-gray-300"></i>
@@ -239,7 +241,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if attachment.status == 'pending' %}
+                                                <!-- {% if attachment.status == 'pending' %}
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     <button class="btn btn-success approve-btn" 
                                                             data-attachment-id="{{ attachment.id }}"
@@ -252,12 +254,13 @@
                                                         <i class="fas fa-times me-1"></i> Reject
                                                     </button>
                                                 </div>
-                                                {% endif %}
+                                                {% endif %} -->
                                                 
                                                 <a href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}" 
                                                    class="btn btn-sm btn-primary mt-1">
                                                     <i class="fas fa-edit me-1"></i> Evaluate
                                                 </a>
+                                                
                                                 
                                                 {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
                                                 <div class="mt-1">

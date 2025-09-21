@@ -1,323 +1,221 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from attachments.models import Attachment
-from .models import EvaluationCriteria, SupervisorEvaluation, LecturerEvaluation, FinalAssessment
+from django.http import HttpResponse
+from attachments.models import Attachment, LogbookEntry
+from .models import (
+    EvaluationCriteria,
+    SupervisorEvaluation,
+    LecturerEvaluation,
+    FinalAssessment,
+    LogbookEvaluation,
+)
 from .forms import SupervisorEvaluationForm, LecturerEvaluationForm
 from accounts.decorators import role_required, supervisor_required
-from django.db.models import Sum
+from django.db.models import Avg
 
 
-def index(request):
-    return HttpResponse("Hello from Evaluations app!")
+# def index(request):
+#     return HttpResponse("Hello from Evaluations app!")
 
 
+# ---------------- Supervisor Views ---------------- #
 @login_required
-@role_required([2])  # Only supervisors
+@role_required([2])  # Supervisors only
 def supervisor_dashboard(request):
+    """Show supervisor dashboard with students under supervision."""
     supervised_attachments = Attachment.objects.filter(supervisor_email=request.user.email)
     evaluations = SupervisorEvaluation.objects.filter(supervisor=request.user)
-    
+
     # Calculate pending evaluations
     pending_evaluations = supervised_attachments.count() - evaluations.count()
-    
-    return render(request, 'evaluations/supervisor_dashboard.html', {
-        'supervised_attachments': supervised_attachments,
-        'evaluations': evaluations,
-        'pending_evaluations': pending_evaluations
+
+    # Calculate average rating (assuming overall_score is 0-100 scale)
+    avg_score = evaluations.aggregate(avg_score=Avg('overall_rating'))['avg_score'] or 0
+
+    # Convert 0-100 to 0-5 scale and format
+    average_rating = f"{(avg_score/20):.1f}/5"
+
+    return render(request, "evaluations/supervisor_dashboard.html", {
+        "supervised_attachments": supervised_attachments,
+        "evaluations": evaluations,
+        "pending_evaluations": pending_evaluations,
+        "average_rating": average_rating,  # pass to template
     })
 
 
-# @login_required
-# @role_required([2])  # Only supervisors
-# def evaluation_form(request, attachment_id):
-#      # Filter by supervisor email
-#     attachment = get_object_or_404(Attachment, id=attachment_id, supervisor_email=request.user.email)
-#     criteria_list = EvaluationCriteria.objects.all()
-    
-#     if request.method == 'POST':
-#         form = SupervisorEvaluationForm(request.POST, criteria_list=criteria_list)
-#         if form.is_valid():
-#             # Calculate overall score
-#             criteria_scores = {}
-#             total_score = 0
-#             total_weight = 0
-            
-#             for criteria in criteria_list:
-#                 score = form.cleaned_data[f'criteria_{criteria.id}']
-#                 criteria_scores[criteria.id] = float(score)
-#                 total_score += float(score) * float(criteria.weight)
-#                 total_weight += float(criteria.weight)
-            
-#             overall_score = total_score / total_weight if total_weight > 0 else 0
-            
-#             # Create or update evaluation
-#             evaluation, created = SupervisorEvaluation.objects.update_or_create(
-#                 attachment=attachment,
-#                 supervisor=request.user,
-#                 defaults={
-#                     'criteria_scores': criteria_scores,
-#                     'overall_score': overall_score,
-#                     'comments': form.cleaned_data['comments']
-#                 }
-#             )
-            
-#             messages.success(request, 'Evaluation submitted successfully!')
-#             return redirect('evaluations:supervisor_dashboard')
-#     else:
-#         # Try to get existing evaluation for this attachment
-#         try:
-#             existing_evaluation = SupervisorEvaluation.objects.get(
-#                 attachment=attachment, 
-#                 supervisor=request.user
-#             )
-#             form = SupervisorEvaluationForm(
-#                 criteria_list=criteria_list, 
-#                 initial={
-#                     'comments': existing_evaluation.comments
-#                 }
-#             )
-#         except SupervisorEvaluation.DoesNotExist:
-#             form = SupervisorEvaluationForm(criteria_list=criteria_list)
-    
-#     return render(request, 'evaluations/evaluation_form.html', {
-#         'attachment': attachment,
-#         'form': form,
-#         'criteria_list': criteria_list
-#     })
+@login_required
+@supervisor_required
+def student_logbooks(request, attachment_id):
+    """Supervisor views all logbooks of a student."""
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+
+    if request.user.email != attachment.supervisor_email:
+        messages.error(request, "You are not assigned as supervisor for this student.")
+        return redirect("evaluations:supervisor_dashboard")
+
+    logbooks = LogbookEntry.objects.filter(attachment=attachment).order_by("-entry_date")
+
+    return render(request, "attachments/logbook.html", {
+        "attachment": attachment,
+        "logbooks": logbooks,
+        "mode": "supervisor",  # tells template to show evaluation actions
+    })
 
 
-# evaluations/views.py
+@login_required
+@supervisor_required
+def evaluate_logbook(request, logbook_id):
+    """Supervisor evaluates a single logbook entry."""
+    logbook_entry = get_object_or_404(LogbookEntry, id=logbook_id)
+    attachment = logbook_entry.attachment
+
+    if request.user.email != attachment.supervisor_email:
+        messages.error(request, "You are not assigned as supervisor for this student.")
+        return redirect("evaluations:supervisor_dashboard")
+
+    evaluation = getattr(logbook_entry, "evaluation", None)
+
+    if request.method == "POST":
+        score = request.POST.get("score")
+        comments = request.POST.get("comments")
+
+        if evaluation:
+            evaluation.score = score
+            evaluation.comments = comments
+            evaluation.save()
+            messages.success(request, "Logbook evaluation updated.")
+        else:
+            LogbookEvaluation.objects.create(
+                logbook_entry=logbook_entry,
+                supervisor=request.user,
+                score=score,
+                comments=comments,
+            )
+            messages.success(request, "Logbook evaluated successfully.")
+
+        return redirect("evaluations:student_logbooks", attachment.id)
+
+    return render(request, "evaluations/evaluate_logbook.html", {
+        "logbook_entry": logbook_entry,
+        "evaluation": evaluation,
+    })
+
 @login_required
 @supervisor_required
 def evaluation_form(request, attachment_id):
+    """Supervisor evaluates student overall (criteria-based)."""
     attachment = get_object_or_404(Attachment, id=attachment_id)
-    
-    # Verify this supervisor is assigned to this attachment
-    if request.user != attachment.supervisor:
-        messages.error(request, "You are not assigned as supervisor for this attachment.")
-        return redirect('evaluations:supervisor_dashboard')
-    
-    # Get evaluation criteria
+
+    # ✅ Authorization: only the assigned supervisor can evaluate
+    if request.user.email != attachment.supervisor_email:
+        messages.error(request, "You are not assigned as supervisor for this student.")
+        return redirect("evaluations:supervisor_dashboard")
+
     criteria_list = EvaluationCriteria.objects.all()
-    
-    try:
-        existing_evaluation = SupervisorEvaluation.objects.get(
-            attachment=attachment,
-            supervisor=request.user
-        )
-        is_edit = True
-    except SupervisorEvaluation.DoesNotExist:
-        existing_evaluation = None
-        is_edit = False
-    
-    if request.method == 'POST':
+
+    # ✅ Load existing evaluation or None
+    evaluation = SupervisorEvaluation.objects.filter(
+        attachment=attachment, supervisor=request.user
+    ).first()
+    is_edit = evaluation is not None
+
+    if request.method == "POST":
         form = SupervisorEvaluationForm(
-            request.POST, 
-            instance=existing_evaluation,
-            criteria_list=criteria_list  # This requires the custom __init__ method
+            request.POST,
+            instance=evaluation,
+            criteria_list=criteria_list,
         )
-        
         if form.is_valid():
             evaluation = form.save(commit=False)
             evaluation.attachment = attachment
             evaluation.supervisor = request.user
-            
-            # Handle criteria scores
-            criteria_scores = {}
-            for criteria in criteria_list:
-                field_name = f'criteria_{criteria.id}'
-                criteria_scores[criteria.id] = int(form.cleaned_data.get(field_name, 3))
-            
-            evaluation.criteria_scores = criteria_scores
+
+            # ✅ Save criteria scores in JSON
+            evaluation.criteria_scores = {
+                str(criteria.id): int(form.cleaned_data.get(f"criteria_{criteria.id}", 3))
+                for criteria in criteria_list
+            }
+
+            # ✅ Draft vs Submit
+            if "save_draft" in request.POST:
+                evaluation.status = "draft"
+                messages.info(request, "Draft saved successfully.")
+            elif "submit" in request.POST:
+                evaluation.status = "submitted"
+                messages.success(request, "Evaluation submitted successfully!")
+
             evaluation.save()
-            
-            messages.success(request, 'Evaluation submitted successfully!')
-            return redirect('evaluations:supervisor_dashboard')
+            return redirect("evaluations:supervisor_dashboard")
     else:
         form = SupervisorEvaluationForm(
-            instance=existing_evaluation,
-            criteria_list=criteria_list  # This requires the custom __init__ method
+            instance=evaluation,
+            criteria_list=criteria_list,
         )
-    
-    context = {
-        'form': form,
-        'attachment': attachment,
-        'criteria_list': criteria_list,
-        'is_edit': is_edit,
-    }
-    
-    return render(request, 'evaluations/evaluation_form.html', context)
+
+    return render(request, "evaluations/evaluation_form.html", {
+        "form": form,
+        "attachment": attachment,
+        "criteria_list": criteria_list,
+        "is_edit": is_edit,
+    })
+
+
+
+# ---------------- Lecturer Views ---------------- #
 
 @login_required
-@role_required([3])  # Only lecturers
+@role_required([3])  # Lecturers only
 def lecturer_dashboard(request):
-    # Get all attachments (or those assigned to this lecturer)
+    """Lecturer dashboard shows all attachments and evaluations."""
     all_attachments = Attachment.objects.all()
     evaluations = LecturerEvaluation.objects.filter(lecturer=request.user)
-    
-    # Calculate pending evaluations
+
     completed_attachments = [eval.attachment for eval in evaluations]
     pending_evaluations = all_attachments.count() - len(completed_attachments)
-    
-    return render(request, 'evaluations/lecturer_dashboard.html', {
-        'all_attachments': all_attachments,
-        'evaluations': evaluations,
-        'pending_evaluations': pending_evaluations
+
+    return render(request, "evaluations/lecturer_dashboard.html", {
+        "all_attachments": all_attachments,
+        "evaluations": evaluations,
+        "pending_evaluations": pending_evaluations,
     })
 
 
-# @login_required
-# @role_required([3])  # Only lecturers
-# def grading_panel(request, attachment_id):
-#     attachment = get_object_or_404(Attachment, id=attachment_id)
-#     criteria_list = EvaluationCriteria.objects.all()
-    
-#     # Check if supervisor evaluation exists
-#     try:
-#         supervisor_evaluation = SupervisorEvaluation.objects.get(attachment=attachment)
-#     except SupervisorEvaluation.DoesNotExist:
-#         supervisor_evaluation = None
-    
-#     if request.method == 'POST':
-#         form = LecturerEvaluationForm(request.POST, criteria_list=criteria_list)
-#         if form.is_valid():
-#             # Calculate overall score
-#             criteria_scores = {}
-#             total_score = 0
-#             total_weight = 0
-            
-#             for criteria in criteria_list:
-#                 score = form.cleaned_data[f'criteria_{criteria.id}']
-#                 criteria_scores[criteria.id] = float(score)
-#                 total_score += float(score) * float(criteria.weight)
-#                 total_weight += float(criteria.weight)
-            
-#             overall_score = total_score / total_weight if total_weight > 0 else 0
-            
-#             # Create or update evaluation
-#             evaluation, created = LecturerEvaluation.objects.update_or_create(
-#                 attachment=attachment,
-#                 lecturer=request.user,
-#                 defaults={
-#                     'criteria_scores': criteria_scores,
-#                     'overall_score': overall_score,
-#                     'comments': form.cleaned_data['comments']
-#                 }
-#             )
-            
-#             # Create or update final assessment if supervisor evaluation exists
-#             if supervisor_evaluation:
-#                 final_score = (supervisor_evaluation.overall_score + overall_score) / 2
-                
-#                 # Determine grade
-#                 if final_score >= 90:
-#                     grade = 'A'
-#                 elif final_score >= 80:
-#                     grade = 'B'
-#                 elif final_score >= 70:
-#                     grade = 'C'
-#                 elif final_score >= 60:
-#                     grade = 'D'
-#                 else:
-#                     grade = 'F'
-                
-#                 FinalAssessment.objects.update_or_create(
-#                     attachment=attachment,
-#                     defaults={
-#                         'supervisor_score': supervisor_evaluation.overall_score,
-#                         'lecturer_score': overall_score,
-#                         'final_score': final_score,
-#                         'grade': grade,
-#                         'assessed_by': request.user
-#                     }
-#                 )
-            
-#             messages.success(request, 'Evaluation submitted successfully!')
-#             return redirect('evaluations:lecturer_dashboard')
-#     else:
-#         # Try to get existing evaluation for this attachment
-#         try:
-#             existing_evaluation = LecturerEvaluation.objects.get(
-#                 attachment=attachment, 
-#                 lecturer=request.user
-#             )
-#             form = LecturerEvaluationForm(
-#                 criteria_list=criteria_list, 
-#                 initial={
-#                     'comments': existing_evaluation.comments
-#                 }
-#             )
-#         except LecturerEvaluation.DoesNotExist:
-#             form = LecturerEvaluationForm(criteria_list=criteria_list)
-    
-#     return render(request, 'evaluations/grading_panel.html', {
-#         'attachment': attachment,
-#         'form': form,
-#         'criteria_list': criteria_list,
-#         'supervisor_evaluation': supervisor_evaluation
-#     })
-
-
-# evaluations/views.py
 @login_required
-@role_required([2])  # Only supervisors
-def view_student_logbook(request, attachment_id):
-    attachment = get_object_or_404(Attachment, id=attachment_id)
-    
-    # Verify this supervisor is associated with the attachment
-    if attachment.supervisor_email != request.user.email:
-        messages.error(request, "You don't have permission to view this student's logbook.")
-        return redirect('evaluations:supervisor_dashboard')
-    
-    entries = LogbookEntry.objects.filter(attachment=attachment).order_by('-entry_date')
-    
-    return render(request, 'evaluations/student_logbook.html', {
-        'attachment': attachment,
-        'entries': entries,
-        'student': attachment.student
-    })
-
-@login_required
-@role_required([3])  # Only lecturers
+@role_required([3])
 def grading_panel(request, attachment_id):
+    """Lecturer grades a student, referencing supervisor evaluation."""
     attachment = get_object_or_404(Attachment, id=attachment_id)
-    
-    # Check if supervisor evaluation exists
-    try:
-        supervisor_evaluation = SupervisorEvaluation.objects.get(attachment=attachment)
-    except SupervisorEvaluation.DoesNotExist:
-        supervisor_evaluation = None
-    
-    if request.method == 'POST':
-        form = LecturerEvaluationForm(request.POST)
+    criteria_list = EvaluationCriteria.objects.all()
+
+    supervisor_evaluation = SupervisorEvaluation.objects.filter(attachment=attachment).first()
+
+    existing_evaluation = LecturerEvaluation.objects.filter(
+        attachment=attachment, lecturer=request.user
+    ).first()
+
+    if request.method == "POST":
+        form = LecturerEvaluationForm(request.POST, instance=existing_evaluation, criteria_list=criteria_list)
         if form.is_valid():
-            # Create or update evaluation
-            evaluation, created = LecturerEvaluation.objects.update_or_create(
-                attachment=attachment,
-                lecturer=request.user,
-                defaults={
-                    'comments': form.cleaned_data['comments'],
-                    'grade': form.cleaned_data['grade']
-                }
-            )
-            
-            messages.success(request, 'Evaluation submitted successfully!')
-            return redirect('evaluations:lecturer_dashboard')
+            evaluation = form.save(commit=False)
+            evaluation.attachment = attachment
+            evaluation.lecturer = request.user
+
+            # Optional: Save per-criteria scores
+            evaluation.criteria_scores = {
+                criteria.id: int(form.cleaned_data.get(f"criteria_{criteria.id}", 3))
+                for criteria in criteria_list
+            }
+            evaluation.save()
+
+            messages.success(request, "Evaluation submitted successfully!")
+            return redirect("evaluations:lecturer_dashboard")
     else:
-        # Try to get existing evaluation for this attachment
-        try:
-            existing_evaluation = LecturerEvaluation.objects.get(
-                attachment=attachment, 
-                lecturer=request.user
-            )
-            form = LecturerEvaluationForm(instance=existing_evaluation)
-        except LecturerEvaluation.DoesNotExist:
-            form = LecturerEvaluationForm()
-    
-    return render(request, 'evaluations/grading_panel.html', {
-        'attachment': attachment,
-        'form': form,
-        'supervisor_evaluation': supervisor_evaluation
+        form = LecturerEvaluationForm(instance=existing_evaluation, criteria_list=criteria_list)
+
+    return render(request, "evaluations/grading_panel.html", {
+        "attachment": attachment,
+        "form": form,
+        "supervisor_evaluation": supervisor_evaluation,
+        "criteria_list": criteria_list,
     })

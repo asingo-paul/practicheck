@@ -41,6 +41,12 @@ class Attachment(models.Model):
     ), default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # this prevent multiple attachments per student at the database level
+        constraints = [
+            models.UniqueConstraint(fields=['student'], name='unique_student_attachment')
+        ]
     
     def __str__(self):
         return f"{self.student.get_full_name()} - {self.organization}"
@@ -111,11 +117,7 @@ class Attachment(models.Model):
             # Attachment is ongoing
             return (self.end_date - today).days
 
-    class Meta:
-        # this prevent multiple attachments per student at the database level
-        constraints = [
-            models.UniqueConstraint(fields=['student'], name='unique_student_attachment')
-        ]
+   
 
 class LogbookEntry(models.Model):
     attachment = models.ForeignKey(Attachment, on_delete=models.CASCADE, related_name='logbook_entries')
@@ -142,27 +144,40 @@ class LogbookEntry(models.Model):
         return self.edit_count < 2
 
 
+# @receiver(post_save, sender=LogbookEntry)
+# def send_supervisor_notification(sender, instance, created, **kwargs):
+#     """Send email notification to supervisor when a new entry is created"""
+#     if created and instance.attachment.supervisor_email:
+#         subject = f'New Logbook Entry - {instance.attachment.student.get_full_name()}'
+#         message = f'''
+#         {instance.attachment.student.get_full_name()} has submitted a new logbook entry.
+        
+#         Date: {instance.entry_date}
+#         Organization: {instance.attachment.organization}
+#         Department: {instance.department_section}
+#         Hours Worked: {instance.hours_worked}
+        
+#         Tasks: {instance.tasks[:100]}...
+        
+#         Please review the entry in the supervisor portal.
+#         '''
+        
+#         send_mail(
+#             subject,
+#             message,
+#             settings.DEFAULT_FROM_EMAIL,
+#             [instance.attachment.supervisor_email],
+#             fail_silently=True,
+#         )
+
+
 @receiver(post_save, sender=LogbookEntry)
 def send_supervisor_notification(sender, instance, created, **kwargs):
-    """Send email notification to supervisor when a new entry is created"""
     if created and instance.attachment.supervisor_email:
         subject = f'New Logbook Entry - {instance.attachment.student.get_full_name()}'
-        message = f'''
-        {instance.attachment.student.get_full_name()} has submitted a new logbook entry.
-        
-        Date: {instance.entry_date}
-        Organization: {instance.attachment.organization}
-        Department: {instance.department_section}
-        Hours Worked: {instance.hours_worked}
-        
-        Tasks: {instance.tasks[:100]}...
-        
-        Please review the entry in the supervisor portal.
-        '''
-        
+        message = f"{instance.attachment.student.get_full_name()} submitted a logbook entry on {instance.entry_date}."
         send_mail(
-            subject,
-            message,
+            subject, message,
             settings.DEFAULT_FROM_EMAIL,
             [instance.attachment.supervisor_email],
             fail_silently=True,
@@ -175,3 +190,22 @@ class ReportUpload(models.Model):
 
     def __str__(self):
         return f"{self.attachment.organization} - {self.file.name}"
+    
+
+class Report(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    document = models.FileField(upload_to='reports/')
+    submission_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    feedback = models.TextField(blank=True, null=True)
+    version = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.title} (v{self.version}) - {self.student}"
