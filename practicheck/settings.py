@@ -30,7 +30,7 @@ if not DEBUG:
     # Only show custom errors in production
     handler403 = 'django.views.defaults.permission_denied'
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,asingojnr.pythonanywhere.com', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -100,6 +100,13 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# 'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'yourusername$yourdbname',
+#         'USER': 'yourusername',
+#         'PASSWORD': 'yourpassword',
+#         'HOST': 'yourusername.mysql.pythonanywhere-services.com',
+#         'PORT': '3306',
 
 
 # Password validation
