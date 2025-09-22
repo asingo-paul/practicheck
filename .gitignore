@@ -3,4 +3,6 @@ accounts/__pycache__/decorators.cpython-312.pyc
 ccounts/__pycache__/forms.cpython-312.pyc
 accounts/__pycache__/models.cpython-312.pyc
 accounts/__pycache__/urls.cpython-312.pyc
-accounts/__pycache__/views.cpython-312.pyc
+accounts/__pycache__/views.cpython-312.pyc*.pyc
+__pycache__/
+db.sqlite3
