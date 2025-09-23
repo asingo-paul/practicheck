@@ -30,7 +30,7 @@ if not DEBUG:
     # Only show custom errors in production
     handler403 = 'django.views.defaults.permission_denied'
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,asingojnr.pythonanywhere.com', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,asingojnr.pythonanywhere.com, 35.154.18.170, ec2-35-154-18-170.ap-south-1.compute.amazonaws.com', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
