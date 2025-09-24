@@ -11,6 +11,13 @@ from attachments.models import Attachment, LogbookEntry
 
 User = get_user_model()
 
+ROLE_MAP = {
+    "student": 1,
+    "supervisor": 2,
+    "lecturer": 3,
+    "admin": 4,
+}
+
 def user_register(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -30,21 +37,61 @@ def user_register(request):
         form = UserRegistrationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
+# def user_login(request):
+#     if request.method == 'POST':
+#         form = UserLoginForm(request, data=request.POST)
+#         if form.is_valid():
+#             username = form.cleaned_data.get('username')
+#             password = form.cleaned_data.get('password')
+#             user = authenticate(request, username=username, password=password)
+            
+#             if user is not None:
+#                 # Set the backend and login
+#                 user.backend = 'accounts.backend.IDBackend'
+#                 login(request, user)
+                
+#                 messages.success(request, f"Welcome, {user.first_name}!")
+#                 # Redirect based on user_type
+#                 if user.user_type == 1:
+#                     return redirect('accounts:student_dashboard')
+#                 elif user.user_type == 2:
+#                     return redirect('accounts:supervisor_dashboard')
+#                 elif user.user_type == 3:
+#                     return redirect('accounts:lecturer_dashboard')
+    #             elif user.user_type == 4:
+    #                 return redirect('admin:index')
+    #         else:
+    #             messages.error(request, "Invalid ID or password.")
+    #     else:
+    #         for field, errors in form.errors.items():
+    #             for error in errors:
+    #                 messages.error(request, f"{field}: {error}")
+    # else:
+    #     form = UserLoginForm()
+    
+    # return render(request, 'accounts/login.html', {'form': form})
+
 def user_login(request):
     if request.method == 'POST':
         form = UserLoginForm(request, data=request.POST)
+        selected_role = request.POST.get("role")  # Get role from hidden input
+
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             user = authenticate(request, username=username, password=password)
-            
+
             if user is not None:
-                # Set the backend and login
+                expected_type = ROLE_MAP.get(selected_role)
+                if expected_type and user.user_type != expected_type:
+                    messages.error(request, "Role mismatch! Please select the correct role for your account.")
+                    return redirect('accounts:login')
+
+                # Login success
                 user.backend = 'accounts.backend.IDBackend'
                 login(request, user)
-                
                 messages.success(request, f"Welcome, {user.first_name}!")
-                # Redirect based on user_type
+
                 if user.user_type == 1:
                     return redirect('accounts:student_dashboard')
                 elif user.user_type == 2:
@@ -61,8 +108,10 @@ def user_login(request):
                     messages.error(request, f"{field}: {error}")
     else:
         form = UserLoginForm()
-    
+
     return render(request, 'accounts/login.html', {'form': form})
+
+
 
 @login_required
 def user_logout(request):
