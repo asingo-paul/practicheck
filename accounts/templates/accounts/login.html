@@ -7,42 +7,48 @@
 <div class="auth-container">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-5 col-md-7">
+            <div class="col-xl-4 col-lg-5 col-md-7 col-sm-10">
                 <div class="auth-card card shadow-lg border-0">
                     <div class="card-body p-5">
                         <div class="auth-header text-center mb-4">
                             <div class="auth-icon mb-3">
                                 <i class="fas fa-sign-in-alt fa-3x text-primary"></i>
                             </div>
-                            <h2 class="fw-bold text-gradient">Welcome Back</h2>
-                            <p class="text-muted">Sign in to your PractiCheck account</p>
+                            <h2 class="fw-bold text-gradient">Practicheck Login</h2>
+                            <p class="text-muted">Kindly choose your role!</p>
                         </div>
-
-                        {% if messages %}
-                        <div class="messages mb-4">
-                            {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
 
                         <form method="post" class="needs-validation" novalidate>
                             {% csrf_token %}
                             {{ form.non_field_errors }}
+
+                            <!-- Hidden role field -->
+                            <input type="hidden" name="role" id="selectedRoleInput" value="student">
                             
+                            <!-- Role Tabs -->
+                            <div class="mb-4 text-center">
+                                <div class="btn-group role-tabs flex-wrap w-100" role="group">
+                                    <button type="button" class="btn btn-outline-primary active flex-fill m-1" data-role="student">
+                                        <i class="fas fa-user-graduate me-1"></i> Student
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary flex-fill m-1" data-role="lecturer">
+                                        <i class="fas fa-chalkboard-teacher me-1"></i> Lecturer
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary flex-fill m-1" data-role="supervisor">
+                                        <i class="fas fa-user-tie me-1"></i> Supervisor
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="mb-4">
-                                <label for="id_username" class="form-label">Student/Staff ID <span class="text-danger">*</span></label>
+                                <label for="id_username" class="form-label" id="loginLabel">Student ID <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-lg">
-                                    <span class="input-group-text"><i class="fas fa-id-badge"></i></span>
+                                    <span class="input-group-text" id="loginIcon"><i class="fas fa-id-badge"></i></span>
                                     <input type="text" name="username" autofocus autocapitalize="none" autocomplete="username"
                                            maxlength="150" class="form-control" required id="id_username"
-                                           placeholder="Enter your Student or Staff ID">
+                                           placeholder="Enter your Student ID">
                                 </div>
-                                <div class="invalid-feedback">Please enter your ID.</div>
+                                <div class="invalid-feedback">Please enter your login credential.</div>
                             </div>
 
                             <div class="mb-4">
@@ -58,12 +64,12 @@
                                 <div class="invalid-feedback">Please enter your password.</div>
                             </div>
 
-                            <div class="mb-4 d-flex justify-content-between align-items-center">
+                            <div class="mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="rememberMe">
                                     <label class="form-check-label" for="rememberMe">Remember me</label>
                                 </div>
-                                <a href="{% url 'accounts:password_reset' %}" class="text-primary text-decoration-none">
+                                <a href="{% url 'accounts:password_reset' %}" class="text-primary text-decoration-none small">
                                     <i class="fas fa-key me-1"></i>Forgot Password?
                                 </a>
                             </div>
@@ -92,7 +98,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_css %}
 <style>
 .auth-container { 
     min-height: 100vh; 
@@ -158,16 +166,65 @@
     background-color: #f8f9fa;
 }
 
+.role-tabs .btn {
+    border-radius: 8px !important;
+    min-width: 90px;
+}
+.role-tabs .btn.active {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: #fff;
+    border: none;
+}
+
+/* Responsiveness */
 @media (max-width: 768px) {
     .auth-card {
         margin: 1rem;
     }
     .card-body {
-        padding: 2rem !important;
+        padding: 1.5rem !important;
+    }
+    h2.fw-bold {
+        font-size: 1.5rem;
+    }
+    .role-tabs .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .auth-container {
+        padding: 1rem 0;
+    }
+    .auth-card {
+        margin: 0.5rem;
+        border-radius: 12px;
+    }
+    .card-body {
+        padding: 1rem !important;
+    }
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+    }
+    .input-group-text {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    .form-label,
+    .form-check-label,
+    .text-muted {
+        font-size: 0.85rem;
+    }
+    .role-tabs .btn {
+        width: 100%;
     }
 }
 </style>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Password toggle
@@ -196,16 +253,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Add animation to input focus
-    const inputs = document.querySelectorAll('.form-control');
-    inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.classList.add('input-focused');
-        });
-        input.addEventListener('blur', function() {
-            this.parentElement.classList.remove('input-focused');
+    // Role tabs functionality
+    const roleButtons = document.querySelectorAll('.role-tabs .btn');
+    const loginInput = document.getElementById('id_username');
+    const loginLabel = document.getElementById('loginLabel');
+    const loginIcon = document.getElementById('loginIcon');
+
+    function setRole(role) {
+        roleButtons.forEach(b => b.classList.remove('active'));
+        document.querySelector(`[data-role="${role}"]`).classList.add('active');
+
+        // Update form hidden input
+        document.getElementById("selectedRoleInput").value = role;
+
+        if (role === "student") {
+            loginLabel.innerHTML = "Student ID <span class='text-danger'>*</span>";
+            loginInput.placeholder = "Enter your Student ID";
+            loginIcon.innerHTML = '<i class="fas fa-id-badge"></i>';
+        } else if (role === "lecturer") {
+            loginLabel.innerHTML = "Staff ID <span class='text-danger'>*</span>";
+            loginInput.placeholder = "Enter your Staff ID";
+            loginIcon.innerHTML = '<i class="fas fa-chalkboard"></i>';
+        } else if (role === "supervisor") {
+            loginLabel.innerHTML = "Email <span class='text-danger'>*</span>";
+            loginInput.placeholder = "Enter your Email";
+            loginIcon.innerHTML = '<i class="fas fa-envelope"></i>';
+        }
+
+        localStorage.setItem("selectedRole", role);
+    }
+
+    roleButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            setRole(this.dataset.role);
         });
     });
+
+    const savedRole = localStorage.getItem("selectedRole") || "student";
+    setRole(savedRole);
 });
 </script>
 {% endblock %}

@@ -146,20 +146,6 @@
                                             <span class="input-group-text"><i class="fas fa-building"></i></span>
                                             <select id="department" name="department" class="form-select" required>
                                                 <option value="">Select Department</option>
-                                                <option value="Agriculture">Agriculture</option>
-                                                <option value="Arts">Arts</option>
-                                                <option value="Business">Business</option>
-                                                <option value="Education">Education</option>
-                                                <option value="Engineering">Engineering</option>
-                                                <option value="Health_Sciences">Health Sciences</option>
-                                                <option value="Law">Law</option>
-                                                <option value="Science">Science</option>
-                                                <option value="IT">IT</option>
-                                                <option value="Humanities">Humanities</option>
-                                                <option value="Social_Sciences">Social Sciences</option>
-                                                <option value="Communication">Communication</option>
-                                                <option value="Theology">Theology</option>
-                                                <option value="International_Relations">International Relations</option>
                                             </select>
                                         </div>
                                     </div>
@@ -169,7 +155,6 @@
                                             <span class="input-group-text"><i class="fas fa-book"></i></span>
                                             <select id="course" name="course" class="form-select" required>
                                                 <option value="">Select Course</option>
-                                                <!-- Courses will be populated dynamically -->
                                             </select>
                                         </div>
                                     </div>
@@ -335,9 +320,10 @@
     transform: translateY(-2px);
 }
 
-.form-check-input:checked + .form-check-label .form-check-card {
+.form-check-input:checked + .form-check-label .card-type {
     border-color: #667eea;
     background-color: rgba(102, 126, 234, 0.1);
+    border-radius: 12px;
 }
 
 .card-type {
@@ -383,15 +369,52 @@
     40% {transform: translateY(-10px);}
     60% {transform: translateY(-5px);}
 }
-
+/* Tablet and below */
 @media (max-width: 768px) {
     .auth-card {
         margin: 1rem;
+        border-radius: 15px;
     }
     .card-body {
-        padding: 2rem !important;
+        padding: 1.5rem !important;
+    }
+    .form-label {
+        font-size: 0.9rem;
+    }
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
     }
 }
+
+/* Mobile (small phones, <576px) */
+@media (max-width: 576px) {
+    .auth-container {
+        padding: 1rem 0;
+    }
+    .auth-card {
+        margin: 0.5rem;
+        border-radius: 12px;
+    }
+    .card-body {
+        padding: 1rem !important;
+    }
+    .input-group-text {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    .form-control, 
+    .btn {
+        font-size: 0.9rem;
+    }
+    h2.fw-bold {
+        font-size: 1.5rem;
+    }
+    p.text-muted {
+        font-size: 0.85rem;
+    }
+}
+
 </style>
 
 <script>

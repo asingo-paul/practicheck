@@ -17,6 +17,28 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- 🔔 Django Messages -->
+    {% if messages %}
+    <div class="messages position-fixed end-0 mt-5 p-3" style="top: 70px; z-index: 1080;">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg"
+                role="alert" style="min-width: 300px;">
+                {% if message.tags == 'error' %}
+                    <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+                {% elif message.tags == 'success' %}
+                    <i class="fas fa-check-circle me-2 text-success"></i>
+                {% elif message.tags == 'warning' %}
+                    <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                {% else %}
+                    <i class="fas fa-info-circle me-2 text-info"></i>
+                {% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <!-- Navigation -->
     {% include 'header.html' %}
     

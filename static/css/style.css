@@ -142,6 +142,15 @@ body {
     font-weight: 700;
 }
 
+.alert-danger {
+    background-color: #f8d7da;
+    color: #da5858;
+    font-weight: 600;
+    border: 1px solid #f5c2c7;
+    border-radius: 0.6rem;
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .sidebar {
