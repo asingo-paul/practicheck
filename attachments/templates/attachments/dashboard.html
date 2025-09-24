@@ -42,15 +42,30 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 15px;
 }
+
+/* Special styling for persistent dashboard warning */
+.dashboard-warning {
+    position: fixed;
+    top: 70px; /* below navbar */
+    right: 1rem;
+    z-index: 1080;
+    max-width: 350px;
+    width: calc(100% - 2rem);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.4s ease-out;
+    font-size: 0.9rem;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- 🚨 Global Alert Above Navbar -->
 {% if attachments %}
-<div class="alert alert-warning text-center mb-0" role="alert" style="position: sticky; top: 0; z-index: 1055; border-radius: 0;">
+<div class="alert alert-warning dashboard-warning alert-dismissible fade show" role="alert">
     <i class="fas fa-exclamation-triangle me-2"></i>
     You already have an active attachment. Creating a new one may override or duplicate records.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 {% endif %}
 
