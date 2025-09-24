@@ -522,3 +522,17 @@ def delete_report(request, report_id):
     report.delete()
     messages.success(request, "Report deleted successfully.")
     return redirect('attachments:logbook', attachment_id=attachment_id)
+
+
+@login_required
+def student_dashboard(request):
+    attachments = Attachment.objects.filter(student=request.user)
+    recent_entries = LogbookEntry.objects.filter(
+        attachment__student=request.user
+    ).order_by('-entry_date')[:5]
+
+    return render(request, 'attachments/dashboard.html', {
+        'attachments': attachments,
+        'recent_entries': recent_entries,
+        'today': timezone.now().date()
+    })
