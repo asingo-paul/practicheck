@@ -17,6 +17,40 @@
     font-size: 0.8rem;
     font-weight: bold;
 }
+
+/* 🔔 Alerts Styling */
+.messages-container {
+    position: fixed;
+    top: 70px; /* just below navbar */
+    right: 1rem;
+    z-index: 1080;
+    max-width: 350px;
+    width: calc(100% - 2rem);
+}
+
+.messages-container .alert {
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.4s ease-out;
+    font-size: 0.9rem;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Responsive: alerts take full width on small screens */
+@media (max-width: 576px) {
+    .messages-container {
+        right: 0.5rem;
+        left: 0.5rem;
+        max-width: unset;
+        width: auto;
+    }
+}
 </style>
 {% endblock %}
 
@@ -29,5 +63,42 @@
         </div>
     </div>
 </div>
+
+<!-- 🔔 Messages Section (applies to all student pages) -->
+{% if messages %}
+<div class="messages-container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {% if message.tags == 'error' %}
+                <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+            {% elif message.tags == 'success' %}
+                <i class="fas fa-check-circle me-2 text-success"></i>
+            {% elif message.tags == 'warning' %}
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+            {% else %}
+                <i class="fas fa-info-circle me-2 text-info"></i>
+            {% endif %}
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 {{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 🔔 Auto-dismiss after 6s
+document.addEventListener("DOMContentLoaded", () => {
+    const alerts = document.querySelectorAll('.messages-container .alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.classList.remove('show');
+            alert.classList.add('fade');
+        }, 6000);
+    });
+});
+</script>
 {% endblock %}

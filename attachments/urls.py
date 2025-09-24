@@ -7,6 +7,7 @@ app_name = 'attachments'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path("dashboard/", views.student_dashboard, name="student_dashboard"),
     path('create/', views.create_attachment, name='create_attachment'),
     path('edit/<int:attachment_id>/', views.edit_attachment, name='edit_attachment'),
     path('detail/<int:attachment_id>/', views.attachment_detail, name='attachment_detail'),
