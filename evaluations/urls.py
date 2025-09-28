@@ -1,6 +1,7 @@
 # evaluations/urls.py
-from django.urls import path
+from django.urls import path, include
 from . import views
+from django.contrib import admin
 
 app_name = "evaluations"
 
@@ -14,4 +15,5 @@ urlpatterns = [
     # Lecturer URLs
     path("lecturer/dashboard/", views.lecturer_dashboard, name="lecturer_dashboard"),
     path("lecturer/grading-panel/<int:attachment_id>/", views.grading_panel, name="grading_panel"),
+    
 ]
