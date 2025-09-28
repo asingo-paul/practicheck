@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 User = get_user_model()
 
@@ -209,3 +210,19 @@ class Report(models.Model):
 
     def __str__(self):
         return f"{self.title} (v{self.version}) - {self.student}"
+    
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name="sent_messages", on_delete=models.CASCADE)
+    recipient = models.ForeignKey(User, related_name="received_messages", on_delete=models.CASCADE)
+    subject = models.CharField(max_length=255, blank=True)
+    body = models.TextField()
+    attachment = models.FileField(upload_to="messages/", blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+class Announcement(models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    posted_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
