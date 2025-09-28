@@ -3,6 +3,15 @@
 
 {% block title %}Supervisor Dashboard - PractiCheck{% endblock %}
 
+{% block extra_css %}
+<style>
+.clickable-row:hover {
+    background-color: #f8f9fa !important;
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row">
@@ -16,12 +25,6 @@
                             Supervisor Dashboard
                         </a>
                     </li>
-                    <!-- <li class="nav-item">
-                        <a class="nav-link" href="{% url 'attachments:dashboard' %}">
-                            <i class="fas fa-user me-2"></i>
-                            Student View
-                        </a>
-                    </li> -->
                     <li class="nav-item mt-4">
                         <a class="nav-link text-warning" href="#">
                             <i class="fas fa-clipboard-list me-2"></i>
@@ -145,9 +148,7 @@
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                         Average Rating Given
                                     </div>
-                                    <!-- <div class="h5 mb-0 font-weight-bold text-gray-800">4.2/5</div> -->
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">{{ average_rating }}</div>
-
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-star fa-2x text-gray-300"></i>
@@ -185,7 +186,7 @@
                                     </thead>
                                     <tbody>
                                         {% for attachment in supervised_attachments %}
-                                        <tr>
+                                        <tr class="clickable-row" data-href="{% url 'attachments:supervisor_logbook' attachment_id=attachment.id %}">
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <img src="https://ui-avatars.com/api/?name={{ attachment.student.get_full_name }}&background=4e73df&color=fff&size=32" 
@@ -196,6 +197,7 @@
                                                     </div>
                                                 </div>
                                             </td>
+                                            
                                             <td>{{ attachment.organization }}</td>
                                             <td>{{ attachment.start_date }}</td>
                                             <td>{{ attachment.end_date }}</td>
@@ -241,26 +243,10 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <!-- {% if attachment.status == 'pending' %}
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <button class="btn btn-success approve-btn" 
-                                                            data-attachment-id="{{ attachment.id }}"
-                                                            data-bs-toggle="tooltip" title="Approve Attachment">
-                                                        <i class="fas fa-check me-1"></i> Approve
-                                                    </button>
-                                                    <button class="btn btn-danger reject-btn" 
-                                                            data-attachment-id="{{ attachment.id }}"
-                                                            data-bs-toggle="tooltip" title="Reject Attachment">
-                                                        <i class="fas fa-times me-1"></i> Reject
-                                                    </button>
-                                                </div>
-                                                {% endif %} -->
-                                                
                                                 <a href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}" 
                                                    class="btn btn-sm btn-primary mt-1">
                                                     <i class="fas fa-edit me-1"></i> Evaluate
                                                 </a>
-                                                
                                                 
                                                 {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
                                                 <div class="mt-1">
@@ -374,6 +360,24 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Add click functionality to table rows
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    
+    clickableRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't trigger if user clicked on a button or link
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || 
+                e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
+            
+            const url = this.getAttribute('data-href');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+
     // Initialize DataTable for students table
     $('#studentsTable').DataTable({
         pageLength: 5,

@@ -10,12 +10,14 @@ from .forms import AttachmentForm, LogbookEntryForm
 import os
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .models import Message, Announcement, User
 from .models import Report
+from django.db.models import Q, Count
 from datetime import timedelta
-# from django import requests
-# import requests
-# from .models import Report, Attachment
-# from .forms import ReportForm
+from django.views.decorators.http import require_POST
+
+
+
 
 
 def index(request):
@@ -452,41 +454,10 @@ def reject_attachment(request, attachment_id):
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
 
 
-
-# @login_required
-# def delete_report(request, report_id):
-#     report = get_object_or_404(ReportUpload, id=report_id, attachment__student=request.user)
-
-#     if request.method == "POST":
-#         report.file.delete(save=False)  # delete file from storage
-#         report.delete()  # delete DB record
-#         messages.success(request, "Report deleted successfully.")
-#         return redirect("attachments:upload_report", attachment_id=report.attachment.id)
-
-#     messages.error(request, "Invalid request.")
-#     return redirect("attachments:upload_report", attachment_id=report.attachment.id)
-
-
-
-
-# def delete_report(request, report_id):
-#     report = get_object_or_404(Report, id=report_id)
-
-#     # Only allow deletion within 10 minutes of upload
-#     time_diff = timezone.now() - report.uploaded_at
-#     if time_diff > timedelta(minutes=10):
-#         messages.error(request, "You can only delete reports shortly after uploading.")
-#         return redirect('attachments:logbook', attachment_id=report.attachment.id)
-
-#     # Delete the file from storage first
-#     report.file.delete(save=False)
-#     report.delete()
-#     messages.success(request, "Report deleted successfully.")
-#     return redirect('attachments:logbook', attachment_id=report.attachment.id)
-
 @login_required
 def report_upload(request):
     # Get latest report by student
+    attachment = get_object_or_404(Attachment, id=attachment_id, student=request.user)
     report = Report.objects.filter(student=request.user).order_by('-submission_date').first()
     submissions = Report.objects.filter(student=request.user).order_by('-submission_date')
 
@@ -499,6 +470,7 @@ def report_upload(request):
             version = submissions.count() + 1
             new_report = Report.objects.create(
                 student=request.user,
+                attachment=attachment,
                 title=title,
                 document=document,
                 version=version
@@ -511,7 +483,8 @@ def report_upload(request):
 
     return render(request, 'attachments/report_upload.html', {
         'report': report,
-        'submissions': submissions
+        'submissions': submissions,
+        'attachment': attachment
     })
 
 
@@ -536,3 +509,160 @@ def student_dashboard(request):
         'recent_entries': recent_entries,
         'today': timezone.now().date()
     })
+
+
+# def communication(request):
+#     messages = Message.objects.filter(student=request.user)
+#     announcements = Announcement.objects.all().order_by('-created_at')
+#     return render(request, 'attachments/communication.html', {
+#         'messages': messages,
+#         'announcements': announcements,
+#     })
+
+@login_required
+def communication(request):
+    user = request.user
+
+    # Contacts (all staff or specific roles)
+    contacts = User.objects.filter(is_staff=True).exclude(id=user.id)
+
+    # Attachments for this user
+    attachments_list = Attachment.objects.filter(student=user)
+
+    # Pick the first attachment as current (if any)
+    current_attachment = attachments_list.first() if attachments_list.exists() else None
+
+    # Annotate unread messages
+    contacts = contacts.annotate(
+        unread_count=Count('sent_messages', filter=Q(sent_messages__recipient=user, sent_messages__is_read=False))
+    )
+
+    # Determine active contact
+    active_contact_id = request.GET.get('contact_id')
+    if active_contact_id:
+        active_contact = get_object_or_404(User, id=active_contact_id)
+    else:
+        active_contact = contacts.first() if contacts.exists() else None
+
+    # Chat messages between user and active contact
+    if active_contact:
+        chat_messages = Message.objects.filter(
+            Q(sender=user, recipient=active_contact) | Q(sender=active_contact, recipient=user)
+        ).order_by('timestamp')
+    else:
+        chat_messages = []
+
+    # Recent conversations (latest messages involving the user)
+    recent_conversations = Message.objects.filter(
+        Q(sender=user) | Q(recipient=user)
+    ).order_by('-timestamp')[:10]
+
+    # Announcements
+    announcements = Announcement.objects.all().order_by('-created_at')[:5]
+
+    context = {
+        'current_attachment': current_attachment,
+        'attachments': attachments_list,
+        'contacts': contacts,
+        'active_contact': active_contact,
+        'chat_messages': chat_messages,
+        'recent_conversations': recent_conversations,
+        'announcements': announcements,
+        'user': user,
+    }
+
+    return render(request, 'attachments/communication.html', context)
+
+
+
+
+def send_message(request):
+    if request.method == 'POST':
+        user = request.user
+        recipient_id = request.POST.get('recipient')
+        subject = request.POST.get('subject', '')
+        body = request.POST.get('body')
+        attachment_file = request.FILES.get('attachment')
+
+        if recipient_id and body:
+            recipient = get_object_or_404(User, id=recipient_id)
+            Message.objects.create(
+                sender=user,
+                recipient=recipient,
+                subject=subject,
+                body=body,
+                attachment=attachment_file if attachment_file else None
+            )
+            # Redirect back to student communication page with active contact
+            return redirect(f'/attachments/student_communication/?contact_id={recipient.id}')
+
+    return redirect('/attachments/student_communication/')
+
+def evaluations(request):
+    # Your view logic here
+    return render(request, 'attachments/assessment.html')
+
+@login_required
+def assessment(request):
+    """Assessment view - placeholder for now"""
+    return render(request, 'attachments/assessment.html')
+
+# attachments/views.py - Add this function
+def supervisor_logbook(request, attachment_id):
+    """Supervisor view of student logbook"""
+    try:
+        # Get the attachment and ensure the current user is the supervisor
+        attachment = get_object_or_404(Attachment, id=attachment_id)
+        
+        # Check if current user is the supervisor of this attachment
+        if not request.user.is_authenticated or request.user.email != attachment.supervisor_email:
+            return render(request, '403.html', status=403)
+        
+        # Get logbook entries for this attachment
+        entries = LogbookEntry.objects.filter(attachment=attachment).order_by('-entry_date')
+        reports = ReportUpload.objects.filter(attachment=attachment).order_by('-uploaded_at')
+        
+        # Calculate stats
+        total_entries = entries.count()
+        total_hours = sum(entry.hours_worked for entry in entries)
+        supervisor_reviews = entries.filter(supervisor_comments__isnull=False).count()
+        
+        context = {
+            'attachment': attachment,
+            'entries': entries,
+            'reports': reports,
+            'reports_count': reports.count(),
+            'total_entries': total_entries,
+            'total_hours': total_hours,
+            'supervisor_reviews': supervisor_reviews,
+            'total_days': attachment.total_days,
+        }
+        
+        return render(request, 'attachments/supervisor_logbook.html', context)
+        
+    except Exception as e:
+        return render(request, 'error.html', {'error': str(e)})
+    
+@require_POST
+def api_add_supervisor_comment(request, entry_id):
+    """API endpoint for supervisors to add comments to logbook entries"""
+    try:
+        entry = get_object_or_404(LogbookEntry, id=entry_id)
+        
+        # Verify the current user is the supervisor
+        if request.user.email != entry.attachment.supervisor_email:
+            return JsonResponse({'error': 'Not authorized'}, status=403)
+        
+        data = json.loads(request.body)
+        comment = data.get('comment', '').strip()
+        
+        if comment:
+            entry.supervisor_comments = comment
+            entry.save()
+            
+            return JsonResponse({'success': True, 'message': 'Comment added successfully'})
+        else:
+            return JsonResponse({'error': 'Comment cannot be empty'}, status=400)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
