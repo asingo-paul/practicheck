@@ -1,4 +1,3 @@
-<!-- templates/attachments/partials/student_sidebar.html -->
 <div class="col-lg-2 col-md-3 d-md-block sidebar collapse bg-dark text-white">
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
@@ -9,7 +8,24 @@
                     Dashboard
                 </a>
             </li>
-            {% if current_attachment %}
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'evaluations' %}active{% endif %}" 
+                   href="{% url 'attachments:evaluations' %}">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Evaluations
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'student_communication' %}active{% endif %}" 
+                   href="{% url 'attachments:communication' %}">
+                    <i class="fas fa-comments me-2"></i>
+                    Communications
+                </a>
+            </li>
+
+            {% if current_attachment and current_attachment.id %}
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'logbook' %}active{% endif %}" 
                    href="{% url 'attachments:logbook' attachment_id=current_attachment.id %}">
@@ -25,6 +41,7 @@
                 </a>
             </li>
             {% endif %}
+
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'create_attachment' %}active{% endif %}" 
                    href="{% url 'attachments:create_attachment' %}">
@@ -33,21 +50,23 @@
                 </a>
             </li>
         </ul>
-        
+
         <hr class="bg-secondary">
-        
+
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
             <span>My Attachments</span>
         </h6>
         <ul class="nav flex-column mb-2">
             {% for attachment in attachments %}
-            <li class="nav-item">
-                <a class="nav-link {% if attachment.id == current_attachment.id %}active{% endif %}" 
-                   href="{% url 'attachments:attachment_detail' attachment_id=attachment.id %}">
-                    <i class="fas fa-building me-2"></i>
-                    {{ attachment.organization }}
-                </a>
-            </li>
+                {% if attachment.id %}
+                <li class="nav-item">
+                    <a class="nav-link {% if current_attachment and attachment.id == current_attachment.id %}active{% endif %}" 
+                       href="{% url 'attachments:attachment_detail' attachment_id=attachment.id %}">
+                        <i class="fas fa-building me-2"></i>
+                        {{ attachment.organization }}
+                    </a>
+                </li>
+                {% endif %}
             {% empty %}
             <li class="nav-item">
                 <a class="nav-link text-muted" href="#">
