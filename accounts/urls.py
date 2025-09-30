@@ -44,4 +44,8 @@ urlpatterns = [
         auth_views.PasswordResetCompleteView.as_view(template_name="accounts/password_reset_complete.html"),
         name="password_reset_complete",
     ),
+
+    # Admin portal URLs
+    path('admin/login/', views.admin_login, name='admin_login'),
+    path('admin/portal/', views.admin_portal, name='admin_portal'),
 ]

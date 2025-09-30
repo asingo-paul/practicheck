@@ -34,6 +34,17 @@ urlpatterns = [
     path('assessment/', views.assessment, name='assessment'),
     # attachments/urls.py - Add this to urlpatterns
     path('supervisor/logbook/<int:attachment_id>/', views.supervisor_logbook, name='supervisor_logbook'),
+
+
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/department/<int:department_id>/', views.department_placements, name='department_placements'),
+    path('admin/assign/<int:placement_id>/<int:lecturer_id>/', views.assign_student, name='assign_student'),
+    
+
+    # Lecturer Management URLs
+    path('admin/lecturers/', views.manage_lecturers, name='manage_lecturers'),
+    path('admin/lecturers/<int:lecturer_id>/toggle/', views.toggle_lecturer, name='toggle_lecturer'),
+    path('lecturers/<int:lecturer_id>/reset-password/', views.reset_lecturer_password, name='reset_lecturer_password'),
     
     
 

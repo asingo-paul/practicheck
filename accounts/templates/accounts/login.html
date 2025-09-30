@@ -81,6 +81,13 @@
                             </div>
                         </form>
 
+                        <div class="text-center mt-4 border-top pt-4">
+                            <p class="text-muted mb-2">Are you an administrator?</p>
+                                <a href="{% url 'accounts:admin_login' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-shield-alt me-1"></i>Access Admin Portal
+                            </a>
+                        </div>
+
                         <div class="text-center mt-4 pt-3 border-top">
                             <p class="mb-0">Don't have an account? 
                                 <a href="{% url 'accounts:register' %}" class="text-primary fw-semibold text-decoration-none">Create one here</a>

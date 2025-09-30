@@ -1,3 +1,4 @@
+# accounts/forms.py - Updated version
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
@@ -5,6 +6,13 @@ from .models import StudentProfile, SupervisorProfile, LecturerProfile
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+# Remove lecturer from public choices
+PUBLIC_USER_TYPE_CHOICES = [
+    (1, 'Student'),
+    (2, 'Supervisor'),
+    # Removed lecturer (3) from public registration
+]
 
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(
@@ -18,7 +26,11 @@ class UserLoginForm(AuthenticationForm):
 
 class UserRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
-    user_type = forms.ChoiceField(choices=User.USER_TYPE_CHOICES, widget=forms.RadioSelect)
+    user_type = forms.ChoiceField(
+        choices=PUBLIC_USER_TYPE_CHOICES, 
+        widget=forms.RadioSelect,
+        label="Account Type"
+    )
 
     student_id = forms.CharField(max_length=50, required=False)
     course = forms.CharField(max_length=100, required=False)
@@ -30,32 +42,30 @@ class UserRegistrationForm(UserCreationForm):
     position = forms.CharField(max_length=100, required=False)
     supervisor_department = forms.CharField(max_length=100, required=False)
 
-    staff_id = forms.CharField(max_length=50, required=False)
-    lecturer_department = forms.CharField(max_length=100, required=False)
-    faculty = forms.CharField(max_length=100, required=False)
+    # Removed lecturer-specific fields since admins will create lecturers
+    # staff_id = forms.CharField(max_length=50, required=False)
+    # lecturer_department = forms.CharField(max_length=100, required=False)
+    # faculty = forms.CharField(max_length=100, required=False)
 
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'user_type', 'password1', 'password2']
+    
     def clean(self):
         cleaned_data = super().clean()
         user_type = cleaned_data.get('user_type')
     
         user_type_str = str(user_type) if user_type else None
 
-    # FIXED: Check the Profile models, not User model
-        if user_type_str == '1':
+        # Only check student and supervisor profiles
+        if user_type_str == '1':  # Student
             student_id = cleaned_data.get('student_id')
             if student_id and StudentProfile.objects.filter(student_id=student_id).exists():
                 self.add_error('student_id', 'This Student ID is already registered.')
     
-    # FIXED: Check the Profile models, not User model
-        elif user_type_str == '3':
-            staff_id = cleaned_data.get('staff_id')
-            if staff_id and LecturerProfile.objects.filter(staff_id=staff_id).exists():
-                self.add_error('staff_id', 'This Staff ID is already registered.')
+        # Removed lecturer check since they're created by admin
         
-    # Check email uniqueness for all users
+        # Check email uniqueness for all users
         email = cleaned_data.get('email')
         if email and User.objects.filter(email=email).exists():
             self.add_error('email', 'This email is already registered.')
@@ -65,16 +75,11 @@ class UserRegistrationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.user_type = int(self.cleaned_data['user_type'])
-        user.email = self.cleaned_data['email']  # Make sure email is set
-
-        # if user.user_type == 1:
-        #     user.student_id = self.cleaned_data['student_id']
-        # elif user.user_type == 3:
-        #     user.staff_id = self.cleaned_data['staff_id']
+        user.email = self.cleaned_data['email']
 
         if commit:
             user.save()
-        # Only create profile if it doesn't exist
+            # Only create profile if it doesn't exist
             if user.user_type == 1 and not hasattr(user, 'student_profile'):
                 StudentProfile.objects.create(
                     user=user,
@@ -91,15 +96,8 @@ class UserRegistrationForm(UserCreationForm):
                     position=self.cleaned_data['position'],
                     department=self.cleaned_data.get('supervisor_department', '')
                 )
-            elif user.user_type == 3 and not hasattr(user, 'lecturer_profile'):
-                LecturerProfile.objects.create(
-                    user=user,
-                    staff_id=self.cleaned_data['staff_id'],
-                    department=self.cleaned_data['lecturer_department'],
-                    faculty=self.cleaned_data['faculty']
-                )
+            # Removed lecturer profile creation
         return user
-           
 
 class StudentProfileForm(forms.ModelForm):
     class Meta:
