@@ -1,0 +1,453 @@
+<!-- templates/attachments/manage_lecturers.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Manage Lecturers - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-chalkboard-teacher me-2"></i>
+            Manage Lecturers
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addLecturerModal">
+                <i class="fas fa-user-plus me-1"></i> Add New Lecturer
+            </button>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Lecturers List -->
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list me-2"></i>
+                        Lecturers List
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lecturers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="lecturersTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Staff ID</th>
+                                    <th>Department</th>
+                                    <th>Assigned Students</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lecturer in lecturers %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ lecturer.user.get_full_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">Office: {{ lecturer.office_location|default:"Not specified" }}</small>
+                                    </td>
+                                    <td>{{ lecturer.user.email }}</td>
+                                    <td>{{ lecturer.staff_id }}</td>
+                                    <td>{{ lecturer.department.name }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ lecturer.assigned_students.count }}</span>
+                                        <br>
+                                        <small class="text-muted">Max: {{ lecturer.max_students }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if lecturer.is_active %}success{% else %}secondary{% endif %}">
+                                            {% if lecturer.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editLecturerModal"
+                                                    data-lecturer-id="{{ lecturer.id }}"
+                                                    data-full-name="{{ lecturer.user.get_full_name }}"
+                                                    data-email="{{ lecturer.user.email }}"
+                                                    data-staff-id="{{ lecturer.staff_id }}"
+                                                    data-department="{{ lecturer.department.id }}"
+                                                    data-phone="{{ lecturer.phone_number }}"
+                                                    data-office="{{ lecturer.office_location }}"
+                                                    data-max-students="{{ lecturer.max_students }}"
+                                                    data-is-active="{{ lecturer.is_active }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if lecturer.is_active %}
+                                            <a href="{% url 'attachments:toggle_lecturer' lecturer.id %}" 
+                                               class="btn btn-outline-warning"
+                                               onclick="return confirm('Deactivate this lecturer?')">
+                                                <i class="fas fa-pause"></i>
+                                            </a>
+                                            {% else %}
+                                            <a href="{% url 'attachments:toggle_lecturer' lecturer.id %}" 
+                                               class="btn btn-outline-success"
+                                               onclick="return confirm('Activate this lecturer?')">
+                                                <i class="fas fa-play"></i>
+                                            </a>
+                                            {% endif %}
+                                            <button class="btn btn-outline-info" 
+                                                    onclick="resetLecturerPassword({{ lecturer.id }}, '{{ lecturer.user.get_full_name }}')"
+                                                    title="Reset Password">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chalkboard-teacher fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Lecturers Found</h5>
+                        <p class="text-muted">Get started by adding your first lecturer.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLecturerModal">
+                            <i class="fas fa-user-plus me-1"></i> Add Lecturer
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Lecturer Modal -->
+<div class="modal fade" id="addLecturerModal" tabindex="-1" aria-labelledby="addLecturerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addLecturerModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Add New Lecturer
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="addLecturerForm">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="create_lecturer">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="staff_id" class="form-label">Staff ID *</label>
+                            <input type="text" class="form-control" id="staff_id" name="staff_id" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="department" class="form-label">Department *</label>
+                            <select class="form-select" id="department" name="department" required>
+                                <option value="">Select Department</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                {% empty %}
+                                <option value="" disabled>No departments available. Please add departments first.</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone_number" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="office_location" class="form-label">Office Location</label>
+                            <input type="text" class="form-control" id="office_location" name="office_location" placeholder="e.g., Room 101, CS Building">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="max_students" class="form-label">Max Students *</label>
+                            <input type="number" class="form-control" id="max_students" name="max_students" value="10" min="1" max="50" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Information Card -->
+                    <div class="alert alert-info">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Automatic Password Generation</strong>
+                                <p class="mb-0 mt-1">A secure random password will be automatically generated and sent to the lecturer's email address.</p>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="generatePasswordDemo()">
+                                <i class="fas fa-key me-1"></i>Generate Demo Password
+                            </button>
+                        </div>
+                        <div id="passwordDemo" class="mt-2" style="display: none;">
+                            <small class="text-muted">Example of generated password: <code id="demoPassword" class="bg-light p-1 rounded"></code></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-envelope me-1"></i>Create & Send Credentials
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Lecturer Modal -->
+<div class="modal fade" id="editLecturerModal" tabindex="-1" aria-labelledby="editLecturerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editLecturerModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Lecturer
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="editLecturerForm">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="update_lecturer">
+                <input type="hidden" name="lecturer_id" id="edit_lecturer_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="edit_first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="edit_email" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_staff_id" class="form-label">Staff ID *</label>
+                            <input type="text" class="form-control" id="edit_staff_id" name="staff_id" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_department" class="form-label">Department *</label>
+                            <select class="form-select" id="edit_department" name="department" required>
+                                <option value="">Select Department</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                {% empty %}
+                                <option value="" disabled>No departments available.</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_phone_number" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="edit_phone_number" name="phone_number">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_office_location" class="form-label">Office Location</label>
+                            <input type="text" class="form-control" id="edit_office_location" name="office_location">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_max_students" class="form-label">Max Students *</label>
+                            <input type="number" class="form-control" id="edit_max_students" name="max_students" min="1" max="50" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" value="true">
+                            <label class="form-check-label" for="edit_is_active">
+                                Active Lecturer
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Lecturer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Style for department dropdown */
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
+
+.password-demo {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#lecturersTable').DataTable({
+        pageLength: 10,
+        responsive: true,
+        order: [[0, 'asc']]
+    });
+
+    // Edit Lecturer Modal
+    const editModal = document.getElementById('editLecturerModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const lecturerId = button.getAttribute('data-lecturer-id');
+            
+            document.getElementById('edit_lecturer_id').value = lecturerId;
+            document.getElementById('edit_first_name').value = button.getAttribute('data-full-name').split(' ')[0] || '';
+            document.getElementById('edit_last_name').value = button.getAttribute('data-full-name').split(' ').slice(1).join(' ') || '';
+            document.getElementById('edit_email').value = button.getAttribute('data-email');
+            document.getElementById('edit_staff_id').value = button.getAttribute('data-staff-id');
+            document.getElementById('edit_department').value = button.getAttribute('data-department');
+            document.getElementById('edit_phone_number').value = button.getAttribute('data-phone') || '';
+            document.getElementById('edit_office_location').value = button.getAttribute('data-office') || '';
+            document.getElementById('edit_max_students').value = button.getAttribute('data-max-students');
+            document.getElementById('edit_is_active').checked = button.getAttribute('data-is-active') === 'True';
+        });
+    }
+
+    // Form validation
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+    // Phone number formatting
+    const phoneInputs = document.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            const x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+            e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+        });
+    });
+
+    // Auto-generate staff ID from email if staff ID is empty
+    document.getElementById('email').addEventListener('blur', function() {
+        const staffIdField = document.getElementById('staff_id');
+        const email = this.value;
+        
+        if (email && !staffIdField.value) {
+            // Extract username part from email and convert to uppercase
+            const username = email.split('@')[0];
+            staffIdField.value = username.toUpperCase();
+        }
+    });
+});
+
+function generatePasswordDemo() {
+    // Simple demo password generation (not the actual secure one)
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    document.getElementById('demoPassword').textContent = password;
+    document.getElementById('passwordDemo').style.display = 'block';
+}
+
+function resetLecturerPassword(lecturerId, lecturerName) {
+    if (confirm(`Reset password for ${lecturerName}? A new password will be generated and sent to their email.`)) {
+        // You'll need to create this URL in your urls.py and view
+        fetch(`/attachments/lecturers/${lecturerId}/reset-password/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Password reset successfully! New credentials have been sent to the lecturer\'s email.');
+            } else {
+                alert('Error resetting password: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error resetting password: ' + error);
+        });
+    }
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -5,7 +5,7 @@ accounts/__pycache__/models.cpython-312.pyc
 accounts/__pycache__/urls.cpython-312.pyc
 accounts/__pycache__/views.cpython-312.pyc*.pyc
 __pycache__/
-db.sqlite3
+# db.sqlite3
 __pycache__/
 *.pyc
 # Virtual environment
@@ -18,7 +18,7 @@ __pycache__/
 *.pyd
 
 # SQLite database
-db.sqlite3
+# db.sqlite3
 
 # Django migrations (optional if you want to version-control them)
 */migrations/__pycache__/

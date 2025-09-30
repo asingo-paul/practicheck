@@ -1,30 +1,42 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
-from .models import StudentProfile, LecturerProfile
+from django.db.models import Q
+from .models import StudentProfile
+from attachments.models import Lecturer
 
 User = get_user_model()
 
 class IDBackend(ModelBackend):
     """
-    Authenticate using student_id or staff_id from profile models.
+    Authenticate using student_id, staff_id, or email.
     """
     def authenticate(self, request, username=None, password=None, **kwargs):
+        user = None
+        
+        # Try student ID
         try:
-            # Try to find a student with this ID
             student_profile = StudentProfile.objects.get(student_id=username)
             user = student_profile.user
         except StudentProfile.DoesNotExist:
-            try:
-                # Try to find a lecturer with this ID
-                lecturer_profile = LecturerProfile.objects.get(staff_id=username)
-                user = lecturer_profile.user
-            except LecturerProfile.DoesNotExist:
-                # Fall back to email authentication for supervisors
-                try:
-                    user = User.objects.get(email=username)
-                except User.DoesNotExist:
-                    return None
+            pass
         
-        if user.check_password(password):
+        # Try lecturer staff ID
+        if not user:
+            try:
+                lecturer = Lecturer.objects.get(staff_id=username)
+                user = lecturer.user
+            except Lecturer.DoesNotExist:
+                pass
+        
+        # Try email as fallback
+        if not user:
+            try:
+                user = User.objects.get(email=username)
+            except User.DoesNotExist:
+                return None
+        
+        # Check password and user status
+        if user and user.check_password(password) and self.user_can_authenticate(user):
             return user
+        
         return None

@@ -145,31 +145,73 @@ class LogbookEntry(models.Model):
         return self.edit_count < 2
 
 
-# @receiver(post_save, sender=LogbookEntry)
-# def send_supervisor_notification(sender, instance, created, **kwargs):
-#     """Send email notification to supervisor when a new entry is created"""
-#     if created and instance.attachment.supervisor_email:
-#         subject = f'New Logbook Entry - {instance.attachment.student.get_full_name()}'
-#         message = f'''
-#         {instance.attachment.student.get_full_name()} has submitted a new logbook entry.
-        
-#         Date: {instance.entry_date}
-#         Organization: {instance.attachment.organization}
-#         Department: {instance.department_section}
-#         Hours Worked: {instance.hours_worked}
-        
-#         Tasks: {instance.tasks[:100]}...
-        
-#         Please review the entry in the supervisor portal.
-#         '''
-        
-#         send_mail(
-#             subject,
-#             message,
-#             settings.DEFAULT_FROM_EMAIL,
-#             [instance.attachment.supervisor_email],
-#             fail_silently=True,
-#         )
+class Department(models.Model):
+    name = models.CharField(max_length=200)
+    #code = models.CharField(max_length=10, unique=True)
+    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+
+
+class PlacementFormSubmission(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_placement_forms')
+    
+    # Student Details
+    registration_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=15)
+    
+    # Course Details
+    course_name = models.CharField(max_length=200)
+    year_of_study = models.CharField(max_length=10, choices=[
+        ('Year 1', 'Year 1'),
+        ('Year 2', 'Year 2'),
+        ('Year 3', 'Year 3'),
+        ('Year 4', 'Year 4'),
+        ('Year 5', 'Year 5'),
+    ])
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='placement_forms')
+    
+    # Firm Details
+    firm_name = models.CharField(max_length=200)
+    firm_email = models.EmailField()
+    town_city = models.CharField(max_length=100)
+    land_mark = models.CharField(max_length=200)
+    
+    # Supervisor Details
+    supervisor_name = models.CharField(max_length=100)
+    supervisor_phone = models.CharField(max_length=15)
+    supervisor_email = models.EmailField()
+    
+    # Period of Attachment
+    start_date = models.DateField()
+    end_date = models.DateField()
+    
+    # Off Days (store as JSON)
+    off_days = models.JSONField(default=list)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['student', 'start_date']
+    
+    def __str__(self):
+        return f"Placement Form - {self.student.get_full_name()} - {self.start_date}"
+    
+    @property
+    def is_assigned(self):
+        return hasattr(self, 'student_assignment')
 
 
 @receiver(post_save, sender=LogbookEntry)
@@ -226,3 +268,33 @@ class Announcement(models.Model):
     body = models.TextField()
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+
+class Lecturer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='attachment_lecturer')
+    staff_id = models.CharField(max_length=20, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='attachment_lecturers')
+    phone_number = models.CharField(max_length=15, blank=True)
+    office_location = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    max_students = models.IntegerField(default=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.department.name}"
+
+class StudentAssignment(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_assignments')
+    lecturer = models.ForeignKey(Lecturer, on_delete=models.CASCADE, related_name='assigned_students')
+    placement_form = models.ForeignKey('PlacementFormSubmission', on_delete=models.CASCADE)
+    assigned_date = models.DateTimeField(auto_now_add=True)
+    academic_year = models.CharField(max_length=9)  # e.g., "2024-2025"
+    
+    class Meta:
+        unique_together = ['student', 'academic_year']
+    
+    def __str__(self):
+        return f"{self.student.get_full_name()} -> {self.lecturer.user.get_full_name()}"
