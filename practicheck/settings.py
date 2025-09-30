@@ -170,12 +170,24 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 
 # Email configuration (for production)
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+# EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+# EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='practicheck@gmail.com')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='vcdm zgpo rwcl fryq')
+# DEFAULT_FROM_EMAIL = 'practicheck@gmail.com'
+
+# Email configuration - FORCE SMTP
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Remove config() for now
+EMAIL_HOST = 'smtp.gmail.com'  # Direct assignment
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'practicheck@gmail.com'
+EMAIL_HOST_PASSWORD = 'vcdm zgpo rwcl fryq' 
+DEFAULT_FROM_EMAIL = 'practicheck@gmail.com'
+
+SITE_URL = 'http://localhost:8000'  # Change to your domain in production
 
 
 LOGOUT_REDIRECT_URL = 'home'

@@ -65,21 +65,6 @@ class LogbookEntryForm(forms.ModelForm):
         return entry_date
 
 
-# class ReportForm(forms.ModelForm):
-#     class Meta:
-#         model = Report
-#         fields = ['title', 'document']
-# 
-#     def clean_document(self):
-#         document = self.cleaned_data.get('document')
-#         if document:
-#             if not document.name.lower().endswith('.pdf'):
-#                 raise forms.ValidationError("Only PDF files are allowed.")
-#             if document.size > 10 * 1024 * 1024:  # 10MB
-#                 raise forms.ValidationError("File size must not exceed 10MB.")
-#         return document
-# 
-# from django import forms
 # from .models import LogbookEntry, Report
 # 
 # class LogbookEntryForm(forms.ModelForm):

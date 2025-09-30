@@ -1,6 +1,35 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.conf import settings
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        """
+        Create and return a regular user with the given email and password.
+        """
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        """
+        Create and return a superuser with the given email and password.
+        """
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('user_type', 4)  # Admin type
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
 
 class CustomUser(AbstractUser):
     username = None  # Remove default username
@@ -13,12 +42,13 @@ class CustomUser(AbstractUser):
     )
     user_type = models.PositiveSmallIntegerField(choices=USER_TYPE_CHOICES, default=1)
 
-    email = models.EmailField(unique=True, null=True, blank=True)
+    email = models.EmailField(unique=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = []  # Remove 'username' from required fields
 
-    # FIXED: Remove duplicate __str__ method, keep only this one:
+    objects = CustomUserManager()  # Add this line
+
     def __str__(self):
         if self.user_type == 1 and hasattr(self, 'student_profile'):
             return self.student_profile.student_id
@@ -27,9 +57,6 @@ class CustomUser(AbstractUser):
         elif self.user_type == 2 and hasattr(self, 'supervisor_profile'):
             return f"{self.get_full_name()} - {self.supervisor_profile.organization}"
         return self.email or f"User {self.id}"
-    # def __str__(self):
-    #     return self.student_id or self.staff_id or self.email or self.username
-
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_profile')
@@ -42,7 +69,6 @@ class StudentProfile(models.Model):
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.student_id}"
 
-
 class SupervisorProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='supervisor_profile')
     organization = models.CharField(max_length=200)
@@ -52,7 +78,6 @@ class SupervisorProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.organization}"
-
 
 class LecturerProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lecturer_profile')
