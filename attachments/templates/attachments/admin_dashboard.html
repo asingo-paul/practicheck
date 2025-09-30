@@ -1,0 +1,271 @@
+<!-- templates/attachments/admin_dashboard.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Admin Dashboard</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'attachments:manage_lecturers' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-user-plus me-1"></i> Manage Lecturers
+                </a>
+                <button class="btn btn-sm btn-outline-secondary">Export Reports</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_students }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Lecturers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_lecturers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Placement Forms
+                            </div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ total_placements }}</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: {{ total_placements|default:0 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Review
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_placements }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Department-wise Placements -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-building me-2"></i>
+                        Placements by Department
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Department</th>
+                                    <th>Total</th>
+                                    <th>Pending</th>
+                                    <th>Assigned</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dept in department_stats %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ dept.name }}</strong>
+                                        <br><small class="text-muted">{{ dept.code }}</small>
+                                    </td>
+                                    <td>{{ dept.total_placements }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ dept.pending_placements }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ dept.assigned_placements }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'attachments:department_placements' department_id=dept.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye me-1"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        No departments found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Placements -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Placement Submissions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_placements %}
+                    <div class="list-group list-group-flush">
+                        {% for placement in recent_placements %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ placement.student.get_full_name }}</h6>
+                                <p class="mb-1 small text-muted">
+                                    {{ placement.course_name }} • {{ placement.firm_name }}
+                                </p>
+                                <small class="text-muted">
+                                    Submitted: {{ placement.submitted_at|timesince }} ago
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{% if placement.status == 'pending' %}warning
+                                          {% elif placement.status == 'approved' %}success
+                                          {% else %}danger{% endif %} mb-2">
+                                    {{ placement.get_status_display }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ placement.department.name }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Recent Submissions</h5>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lecturer Workload -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>
+                        Lecturer Workload Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Lecturer</th>
+                                    <th>Department</th>
+                                    <th>Staff ID</th>
+                                    <th>Assigned Students</th>
+                                    <th>Available Slots</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lecturer in lecturer_workload %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ lecturer.user.get_full_name }}</strong>
+                                        <br><small class="text-muted">{{ lecturer.user.email }}</small>
+                                    </td>
+                                    <td>{{ lecturer.department.name }}</td>
+                                    <td>{{ lecturer.staff_id }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ lecturer.assigned_count }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if lecturer.available_slots > 0 %}success{% else %}danger{% endif %}">
+                                            {{ lecturer.available_slots }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if lecturer.is_active %}success{% else %}secondary{% endif %}">
+                                            {% if lecturer.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        No lecturers found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

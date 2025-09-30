@@ -1,3 +1,4 @@
+<!-- templates/accounts/register.html - Updated version -->
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
@@ -15,7 +16,8 @@
                                 <i class="fas fa-user-plus fa-3x text-primary"></i>
                             </div>
                             <h2 class="fw-bold text-gradient">Create Your Account</h2>
-                            <p class="text-muted">Join PractiCheck as a Student, Supervisor, or Lecturer</p>
+                            <p class="text-muted">Join PractiCheck as a Student or Supervisor</p>
+                            <small class="text-muted">Lecturer accounts are created by administrators</small>
                         </div>
 
                         {% if messages %}
@@ -62,8 +64,8 @@
                             <!-- User Type Selection -->
                             <div class="section-card mb-4">
                                 <h5 class="section-title"><i class="fas fa-users me-2"></i>I am a <span class="text-danger">*</span></h5>
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-5 mb-3">
                                         <div class="form-check-card">
                                             <input class="form-check-input" type="radio" name="user_type" id="user_type_student" value="1" checked>
                                             <label class="form-check-label" for="user_type_student">
@@ -75,7 +77,7 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-5 mb-3">
                                         <div class="form-check-card">
                                             <input class="form-check-input" type="radio" name="user_type" id="user_type_supervisor" value="2">
                                             <label class="form-check-label" for="user_type_supervisor">
@@ -87,18 +89,13 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="form-check-card">
-                                            <input class="form-check-input" type="radio" name="user_type" id="user_type_lecturer" value="3">
-                                            <label class="form-check-label" for="user_type_lecturer">
-                                                <div class="card-type">
-                                                    <i class="fas fa-chalkboard-teacher fa-2x mb-2"></i>
-                                                    <h6>Lecturer</h6>
-                                                    <small class="text-muted">Academic staff</small>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
+                                </div>
+                                <!-- Lecturer info note -->
+                                <div class="alert alert-info mt-3 mb-0">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Lecturer accounts:</strong> Academic staff members should contact the system administrator to create their accounts.
+                                    </small>
                                 </div>
                             </div>
 
@@ -189,33 +186,7 @@
                                 </div>
                             </div>
 
-                            <!-- Lecturer Fields -->
-                            <div id="lecturerFields" class="section-card mb-4" style="display:none;">
-                                <h5 class="section-title"><i class="fas fa-chalkboard-teacher me-2"></i>Lecturer Information</h5>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Staff ID <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                            <input type="text" name="staff_id" class="form-control" placeholder="Staff ID" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Department <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-building"></i></span>
-                                            <input type="text" name="lecturer_department" class="form-control" placeholder="Department" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Faculty <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-landmark"></i></span>
-                                        <input type="text" name="faculty" class="form-control" placeholder="Faculty" required>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- REMOVED LECTURER FIELDS SECTION -->
 
                             <!-- Password Section -->
                             <div class="section-card mb-4">
@@ -276,6 +247,7 @@
 </div>
 
 <style>
+/* Your existing CSS remains the same */
 .auth-container { 
     min-height: 100vh; 
     display: flex; 
@@ -369,7 +341,8 @@
     40% {transform: translateY(-10px);}
     60% {transform: translateY(-5px);}
 }
-/* Tablet and below */
+
+/* Responsive styles remain the same */
 @media (max-width: 768px) {
     .auth-card {
         margin: 1rem;
@@ -387,7 +360,6 @@
     }
 }
 
-/* Mobile (small phones, <576px) */
 @media (max-width: 576px) {
     .auth-container {
         padding: 1rem 0;
@@ -414,22 +386,19 @@
         font-size: 0.85rem;
     }
 }
-
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const studentFields = document.getElementById('studentFields');
     const supervisorFields = document.getElementById('supervisorFields');
-    const lecturerFields = document.getElementById('lecturerFields');
     const radios = document.querySelectorAll('input[name="user_type"]');
 
     function toggleFields() {
         const val = document.querySelector('input[name="user_type"]:checked').value;
-        studentFields.style.display = supervisorFields.style.display = lecturerFields.style.display = 'none';
+        studentFields.style.display = supervisorFields.style.display = 'none';
         studentFields.querySelectorAll('input, select').forEach(i => i.required = false);
         supervisorFields.querySelectorAll('input').forEach(i => i.required = false);
-        lecturerFields.querySelectorAll('input').forEach(i => i.required = false);
 
         if(val === '1') { 
             studentFields.style.display='block'; 
@@ -439,14 +408,10 @@ document.addEventListener('DOMContentLoaded', function() {
             supervisorFields.style.display='block'; 
             supervisorFields.querySelectorAll('input').forEach(i=>i.required=true);
         }
-        else if(val === '3') { 
-            lecturerFields.style.display='block'; 
-            lecturerFields.querySelectorAll('input').forEach(i=>i.required=true);
-        }
     }
 
     radios.forEach(r => r.addEventListener('change', toggleFields));
-    toggleFields();
+    toggleFields(); // Initialize on page load
 
     // Password toggle
     document.querySelectorAll('.toggle-password').forEach(btn => {
@@ -464,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Dynamic University -> Department -> Course
+    // Dynamic University -> Department -> Course (your existing code)
     const universitySelect = document.getElementById('university');
     const departmentSelect = document.getElementById('department');
     const courseSelect = document.getElementById('course');
