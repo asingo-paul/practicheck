@@ -187,7 +187,7 @@ EMAIL_HOST_USER = 'practicheck@gmail.com'
 EMAIL_HOST_PASSWORD = 'vcdm zgpo rwcl fryq' 
 DEFAULT_FROM_EMAIL = 'practicheck@gmail.com'
 
-SITE_URL = 'https://asingojnr.pythonanywhere.com/accounts/login/'  # Change to your domain in production
+SITE_URL = 'https://asingojnr.pythonanywhere.com/accounts/login/'
 
 
 LOGOUT_REDIRECT_URL = 'home'
