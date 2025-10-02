@@ -880,7 +880,7 @@ Here are your login credentials:
 Staff ID: {staff_id}
 Password: {password}
 
-Login URL: {settings.SITE_URL}/accounts/lecturer/login/
+Login URL: {settings.SITE_URL}
 
 Please log in and change your password immediately for security reasons.
 
