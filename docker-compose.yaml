@@ -1,0 +1,11 @@
+name: my-practicheck1
+
+services:
+  app: 
+    image: asingopaul/practicheck:v1.3
+    container_name: my-practicheck1
+    ports:
+      - "8000:8000"
+    
+    volumes:
+      - .:/app
