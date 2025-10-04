@@ -1,11 +1,13 @@
-name: my-practicheck1
+name: practicheck
 
 services:
-  app: 
+  app:
     image: asingopaul/practicheck:v1.3
     container_name: my-practicheck1
     ports:
       - "8000:8000"
-    
+    env_file:
+      - .env   # load environment variables
     volumes:
-      - .:/app
+      - .:/app # mount local code for development (remove in production)
+    command: python manage.py runserver 0.0.0.0:8000
