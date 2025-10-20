@@ -79,7 +79,8 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <!-- Edit Button -->
                                             <button class="btn btn-outline-primary" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#editLecturerModal"
@@ -91,26 +92,32 @@
                                                     data-phone="{{ lecturer.phone_number }}"
                                                     data-office="{{ lecturer.office_location }}"
                                                     data-max-students="{{ lecturer.max_students }}"
-                                                    data-is-active="{{ lecturer.is_active }}">
+                                                    data-is-active="{{ lecturer.is_active }}"
+                                                    title="Edit Lecturer">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            {% if lecturer.is_active %}
-                                            <a href="{% url 'attachments:toggle_lecturer' lecturer.id %}" 
-                                               class="btn btn-outline-warning"
-                                               onclick="return confirm('Deactivate this lecturer?')">
-                                                <i class="fas fa-pause"></i>
-                                            </a>
-                                            {% else %}
-                                            <a href="{% url 'attachments:toggle_lecturer' lecturer.id %}" 
-                                               class="btn btn-outline-success"
-                                               onclick="return confirm('Activate this lecturer?')">
-                                                <i class="fas fa-play"></i>
-                                            </a>
-                                            {% endif %}
+                                            
+                                            <!-- Toggle Active/Inactive -->
+                                            <form method="post" action="{% url 'attachments:toggle_lecturer' lecturer.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-{% if lecturer.is_active %}outline-warning{% else %}outline-success{% endif %}" 
+                                                        title="{% if lecturer.is_active %}Deactivate{% else %}Activate{% endif %} Lecturer">
+                                                    <i class="fas fa-{% if lecturer.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Reset Password -->
                                             <button class="btn btn-outline-info" 
                                                     onclick="resetLecturerPassword({{ lecturer.id }}, '{{ lecturer.user.get_full_name }}')"
                                                     title="Reset Password">
                                                 <i class="fas fa-key"></i>
+                                            </button>
+                                            
+                                            <!-- Delete Lecturer -->
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="confirmDelete({{ lecturer.id }}, '{{ lecturer.user.get_full_name }}', {{ lecturer.assigned_students.count }})"
+                                                    title="Delete Lecturer">
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -169,11 +176,14 @@
                             <input type="text" class="form-control" id="staff_id" name="staff_id" required>
                         </div>
                     </div>
+                    
+                    <!-- Department Selection -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="department" class="form-label">Department *</label>
                             <select class="form-select" id="department" name="department" required>
                                 <option value="">Select Department</option>
+                                <!-- Departments will be populated from the database -->
                                 {% for dept in departments %}
                                 <option value="{{ dept.id }}">{{ dept.name }}</option>
                                 {% empty %}
@@ -186,6 +196,7 @@
                             <input type="tel" class="form-control" id="phone_number" name="phone_number">
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="office_location" class="form-label">Office Location</label>
@@ -260,11 +271,14 @@
                             <input type="text" class="form-control" id="edit_staff_id" name="staff_id" required>
                         </div>
                     </div>
+                    
+                    <!-- Department Selection for Edit -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="edit_department" class="form-label">Department *</label>
                             <select class="form-select" id="edit_department" name="department" required>
                                 <option value="">Select Department</option>
+                                <!-- Departments will be populated from the database -->
                                 {% for dept in departments %}
                                 <option value="{{ dept.id }}">{{ dept.name }}</option>
                                 {% empty %}
@@ -277,6 +291,7 @@
                             <input type="tel" class="form-control" id="edit_phone_number" name="phone_number">
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="edit_office_location" class="form-label">Office Location</label>
@@ -305,6 +320,45 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteLecturerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirm Delete Lecturer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>Are you sure you want to delete lecturer <strong id="deleteLecturerName"></strong>?</p>
+                <p class="text-muted small">
+                    This will permanently delete the lecturer profile and their user account.
+                    Any associated data will be lost.
+                </p>
+                <div id="deleteLecturerWarning" class="alert alert-danger d-none">
+                    <i class="fas fa-times-circle me-2"></i>
+                    <span id="deleteWarningText"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteLecturerForm" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Delete Lecturer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .table th {
     border-top: none;
@@ -321,7 +375,6 @@
     font-size: 0.875rem;
 }
 
-/* Style for department dropdown */
 .form-select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
     background-repeat: no-repeat;
@@ -337,6 +390,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Manage Lecturers JavaScript loaded!');
+
     // Initialize DataTable
     $('#lecturersTable').DataTable({
         pageLength: 10,
@@ -350,17 +405,22 @@ document.addEventListener('DOMContentLoaded', function() {
         editModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
             const lecturerId = button.getAttribute('data-lecturer-id');
+            const department = button.getAttribute('data-department');
             
             document.getElementById('edit_lecturer_id').value = lecturerId;
             document.getElementById('edit_first_name').value = button.getAttribute('data-full-name').split(' ')[0] || '';
             document.getElementById('edit_last_name').value = button.getAttribute('data-full-name').split(' ').slice(1).join(' ') || '';
             document.getElementById('edit_email').value = button.getAttribute('data-email');
             document.getElementById('edit_staff_id').value = button.getAttribute('data-staff-id');
-            document.getElementById('edit_department').value = button.getAttribute('data-department');
             document.getElementById('edit_phone_number').value = button.getAttribute('data-phone') || '';
             document.getElementById('edit_office_location').value = button.getAttribute('data-office') || '';
             document.getElementById('edit_max_students').value = button.getAttribute('data-max-students');
             document.getElementById('edit_is_active').checked = button.getAttribute('data-is-active') === 'True';
+            
+            // Set department
+            if (department) {
+                document.getElementById('edit_department').value = department;
+            }
         });
     }
 
@@ -412,7 +472,6 @@ function generatePasswordDemo() {
 
 function resetLecturerPassword(lecturerId, lecturerName) {
     if (confirm(`Reset password for ${lecturerName}? A new password will be generated and sent to their email.`)) {
-        // You'll need to create this URL in your urls.py and view
         fetch(`/attachments/lecturers/${lecturerId}/reset-password/`, {
             method: 'POST',
             headers: {
@@ -432,6 +491,29 @@ function resetLecturerPassword(lecturerId, lecturerName) {
             alert('Error resetting password: ' + error);
         });
     }
+}
+
+// Delete confirmation function
+function confirmDelete(lecturerId, lecturerName, assignedCount) {
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteLecturerModal'));
+    const deleteForm = document.getElementById('deleteLecturerForm');
+    const lecturerNameSpan = document.getElementById('deleteLecturerName');
+    const warningDiv = document.getElementById('deleteLecturerWarning');
+    const warningText = document.getElementById('deleteWarningText');
+    
+    lecturerNameSpan.textContent = lecturerName;
+    deleteForm.action = `/attachments/admin/lecturers/${lecturerId}/delete/`;
+    
+    if (assignedCount > 0) {
+        warningDiv.classList.remove('d-none');
+        warningText.textContent = `Cannot delete ${lecturerName}. They have ${assignedCount} assigned student(s). Please reassign or unassign the students first.`;
+        deleteForm.querySelector('button[type="submit"]').disabled = true;
+    } else {
+        warningDiv.classList.add('d-none');
+        deleteForm.querySelector('button[type="submit"]').disabled = false;
+    }
+    
+    deleteModal.show();
 }
 
 // Helper function to get CSRF token

@@ -2,6 +2,12 @@
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.models import User
+from .models import Department, Lecturer, PlacementFormSubmission, StudentAssignment
+from django import forms
+from django.db import models
 
 def is_admin(user):
     return user.is_authenticated and (user.is_superuser or user.user_type == 1)

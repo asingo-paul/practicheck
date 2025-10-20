@@ -11,7 +11,7 @@ import os
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Message, Announcement, User
-from .models import Report
+from .models import Report, Course
 from django.db.models import Q, Count
 from datetime import timedelta
 from django.views.decorators.http import require_POST
@@ -21,6 +21,8 @@ import secrets
 import string
 from django.core.mail import send_mail
 from django.conf import settings
+from .email_utils import send_lecturer_credentials, send_lecturer_password_reset
+
 
 
 
@@ -664,86 +666,6 @@ def api_add_supervisor_comment(request, entry_id):
 def is_admin(user):
     return user.is_authenticated and (user.is_superuser or getattr(user, 'user_type', None) == 4)
 
-@user_passes_test(is_admin)
-def admin_dashboard(request):
-    # Statistics
-    total_students = User.objects.filter(user_type=1).count()  # Student type
-    total_lecturers = Lecturer.objects.filter(is_active=True).count()
-    total_placements = PlacementFormSubmission.objects.count()
-    pending_placements = PlacementFormSubmission.objects.filter(status='pending').count()
-    
-    # Department-wise placements - SIMPLE VERSION
-    departments = Department.objects.all()
-    department_stats = []
-    
-    for dept in departments:
-        total_dept_placements = PlacementFormSubmission.objects.filter(department=dept).count()
-        pending_dept_placements = PlacementFormSubmission.objects.filter(
-            department=dept, 
-            status='pending'
-        ).count()
-        
-        # Count assigned placements for this department
-        assigned_dept_placements = StudentAssignment.objects.filter(
-            placement_form__department=dept
-        ).count()
-        
-        department_stats.append({
-            'id': dept.id,
-            'name': dept.name,
-            'code': dept.code,
-            'total_placements': total_dept_placements,
-            'pending_placements': pending_dept_placements,
-            'assigned_placements': assigned_dept_placements,
-        })
-    
-    # Recent placements
-    recent_placements = PlacementFormSubmission.objects.select_related(
-        'student', 'department'
-    ).order_by('-submitted_at')[:10]
-    
-    # Lecturer workload
-    lecturer_workload = Lecturer.objects.filter(is_active=True).annotate(
-        assigned_count=Count('assigned_students'),
-        available_slots=models.F('max_students') - Count('assigned_students')
-    ).order_by('department__name', 'user__first_name')
-    
-    context = {
-        'total_students': total_students,
-        'total_lecturers': total_lecturers,
-        'total_placements': total_placements,
-        'pending_placements': pending_placements,
-        'department_stats': department_stats,
-        'recent_placements': recent_placements,
-        'lecturer_workload': lecturer_workload,
-        'current_year': timezone.now().year,
-    }
-    
-    return render(request, 'attachments/admin_dashboard.html', context)
-
-@user_passes_test(is_admin)
-def department_placements(request, department_id):
-    department = get_object_or_404(Department, id=department_id)
-    placements = PlacementFormSubmission.objects.filter(
-        department=department
-    ).select_related('student').prefetch_related('student_assignment')
-    
-    # Available lecturers in this department
-    available_lecturers = Lecturer.objects.filter(
-        department=department, 
-        is_active=True
-    ).annotate(
-        assigned_count=Count('assigned_students'),
-        available_slots=models.F('max_students') - Count('assigned_students')
-    )
-    
-    context = {
-        'department': department,
-        'placements': placements,
-        'available_lecturers': available_lecturers,
-    }
-    
-    return render(request, 'attachments/department_placements.html', context)
 
 @user_passes_test(is_admin)
 def assign_student(request, placement_id, lecturer_id):
@@ -832,13 +754,21 @@ def manage_lecturers(request):
                     max_students=int(max_students)
                 )
                 
-                # Send email with login credentials
-                send_lecturer_credentials(email, first_name, staff_id, password)
+                # Send email with login credentials using the new function
+                email_sent = send_lecturer_credentials(email, first_name, staff_id, password)
                 
-                messages.success(request, 
-                    f'Lecturer {first_name} {last_name} created successfully! '
-                    f'Login credentials have been sent to their email.'
-                )
+                if email_sent:
+                    messages.success(request, 
+                        f'Lecturer {first_name} {last_name} created successfully! '
+                        f'Login credentials have been sent to their email.'
+                    )
+                else:
+                    messages.warning(request, 
+                        f'Lecturer {first_name} {last_name} created successfully, '
+                        f'but failed to send email. Please provide these credentials manually:<br>'
+                        f'Staff ID: <strong>{staff_id}</strong><br>'
+                        f'Password: <strong>{password}</strong>'
+                    )
                 
             except Exception as e:
                 messages.error(request, f'Error creating lecturer: {str(e)}')
@@ -866,55 +796,6 @@ def generate_secure_password(length=12):
             break
     return password
 
-def send_lecturer_credentials(email, first_name, staff_id, password):
-    """Send login credentials to lecturer via email"""
-    subject = 'Your PractiCheck Lecturer Account Credentials'
-    
-    message = f"""
-Dear {first_name},
-
-Your lecturer account has been created on PractiCheck.
-
-Here are your login credentials:
-
-Staff ID: {staff_id}
-Password: {password}
-
-Login URL: {settings.SITE_URL}
-
-Please log in and change your password immediately for security reasons.
-
-Best regards,
-PractiCheck Administration Team
-"""
-    
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
-        return True
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-        return False
-
-@user_passes_test(is_admin)
-def toggle_lecturer(request, lecturer_id):
-    try:
-        lecturer = Lecturer.objects.get(id=lecturer_id)
-        lecturer.is_active = not lecturer.is_active
-        lecturer.save()
-        
-        status = "activated" if lecturer.is_active else "deactivated"
-        messages.success(request, f'Lecturer {lecturer.user.get_full_name()} has been {status}.')
-    
-    except Lecturer.DoesNotExist:
-        messages.error(request, 'Lecturer not found.')
-    
-    return redirect('attachments:manage_lecturers')
 
 
 
@@ -932,14 +813,22 @@ def reset_lecturer_password(request, lecturer_id):
         lecturer.user.save()
         
         # Send email with new credentials
-        send_lecturer_credentials(
+        email_sent = send_lecturer_password_reset(
             lecturer.user.email,
             lecturer.user.first_name,
             lecturer.staff_id,
             new_password
         )
         
-        messages.success(request, f'Password reset successfully for {lecturer.user.get_full_name()}. New credentials sent to their email.')
+        if email_sent:
+            messages.success(request, f'Password reset successfully for {lecturer.user.get_full_name()}. New credentials sent to their email.')
+        else:
+            messages.warning(request, 
+                f'Password reset for {lecturer.user.get_full_name()} but email failed. '
+                f'Please provide these credentials manually:<br>'
+                f'New Password: <strong>{new_password}</strong>'
+            )
+            
         return JsonResponse({'success': True})
         
     except Lecturer.DoesNotExist:
@@ -949,3 +838,433 @@ def reset_lecturer_password(request, lecturer_id):
         messages.error(request, f'Error resetting password: {str(e)}')
         return JsonResponse({'success': False, 'error': str(e)})
 
+
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    # Statistics - Count ALL students (registered users with user_type=1)
+    total_students = User.objects.filter(user_type=1).count()
+    total_lecturers = Lecturer.objects.filter(is_active=True).count()
+    total_placements = PlacementFormSubmission.objects.count()
+    
+    # Assignment statistics - Count students with assignments
+    assigned_students_count = StudentAssignment.objects.values('student').distinct().count()
+    unassigned_students_count = total_students - assigned_students_count
+    
+    # Department-wise statistics - Count ALL students per department
+    departments = Department.objects.all()
+    department_stats = []
+    
+    for dept in departments:
+        # Count all students in this department
+        total_dept_students = User.objects.filter(
+            user_type=1, 
+            department=dept
+        ).count()
+        
+        # Count assigned students in this department
+        assigned_dept_students = StudentAssignment.objects.filter(
+            student__department=dept
+        ).values('student').distinct().count()
+        
+        # Calculate unassigned
+        unassigned_dept_students = total_dept_students - assigned_dept_students
+        
+        department_stats.append({
+            'id': dept.id,
+            'name': dept.name,
+            'code': dept.code,
+            'total_placements': total_dept_students,  # Now shows total students
+            'assigned_placements': assigned_dept_students,
+            'unassigned_placements': unassigned_dept_students,
+        })
+    
+    # Recent placements (actual placement submissions)
+    recent_placements = PlacementFormSubmission.objects.select_related(
+        'student', 'department'
+    ).prefetch_related('student_assignments').order_by('-submitted_at')[:10]
+    
+    # Lecturer workload
+    lecturer_workload = Lecturer.objects.filter(is_active=True).annotate(
+        assigned_count=Count('assigned_students'),
+        available_slots=models.F('max_students') - Count('assigned_students')
+    ).order_by('department__name', 'user__first_name')
+    
+    # Quick assignment data - Show unassigned STUDENTS (not placements)
+    unassigned_students = User.objects.filter(
+        user_type=1,
+        student_assignments__isnull=True  # Students without assignments
+    ).select_related('department')[:10]
+    
+    recent_assignments = StudentAssignment.objects.select_related(
+        'student', 'lecturer', 'lecturer__user'
+    ).order_by('-assigned_date')[:5]
+    
+    context = {
+        'total_students': total_students,
+        'total_lecturers': total_lecturers,
+        'total_placements': total_placements,
+        'assigned_students_count': assigned_students_count,
+        'unassigned_students_count': unassigned_students_count,
+        'department_stats': department_stats,
+        'recent_placements': recent_placements,
+        'lecturer_workload': lecturer_workload,
+        'unassigned_students': unassigned_students,
+        'recent_assignments': recent_assignments,
+        'current_year': timezone.now().year,
+    }
+    
+    return render(request, 'attachments/admin_dashboard.html', context)
+@user_passes_test(is_admin)
+def admin_students(request):
+    """Admin view for managing all students and their assignments"""
+    # Get filter parameters
+    assignment_filter = request.GET.get('filter', 'all')
+    department_filter = request.GET.get('department', '')
+    
+    # Get ALL registered students (users with user_type=1)
+    students = User.objects.filter(user_type=1).select_related(
+        'department', 'course'
+    ).prefetch_related(
+        'student_assignments',
+        'student_assignments__lecturer',
+        'student_assignments__lecturer__user',
+    ).order_by('first_name', 'last_name')
+    
+    # Apply filters
+    if assignment_filter == 'assigned':
+        students = students.filter(student_assignments__isnull=False)
+    elif assignment_filter == 'unassigned':
+        students = students.filter(student_assignments__isnull=True)
+    
+    if department_filter:
+        students = students.filter(department_id=department_filter)
+    
+    # Get departments for filter dropdown
+    departments = Department.objects.all()
+    
+    # Statistics - Calculate based on ALL students
+    total_students = students.count()
+    assigned_count = students.filter(student_assignments__isnull=False).count()
+    unassigned_count = students.filter(student_assignments__isnull=True).count()
+    
+    # Calculate assignment rate
+    assignment_rate = (assigned_count / total_students * 100) if total_students > 0 else 0
+    
+    # Get placement forms separately to avoid the prefetch error
+    student_ids = students.values_list('id', flat=True)
+    placement_forms = PlacementFormSubmission.objects.filter(
+        student_id__in=student_ids
+    ).select_related('student')
+    
+    # Create a dictionary for quick lookup
+    placement_forms_by_student = {}
+    for placement in placement_forms:
+        if placement.student_id not in placement_forms_by_student:
+            placement_forms_by_student[placement.student_id] = []
+        placement_forms_by_student[placement.student_id].append(placement)
+    
+    context = {
+        'students': students,
+        'departments': departments,
+        'placement_forms_by_student': placement_forms_by_student,
+        'total_students': total_students,
+        'assigned_count': assigned_count,
+        'unassigned_count': unassigned_count,
+        'assignment_rate': assignment_rate,
+        'current_filter': assignment_filter,
+        'selected_department': department_filter,
+    }
+    
+    return render(request, 'attachments/admin_students.html', context)
+
+@user_passes_test(is_admin)
+def department_placements(request, department_id):
+    department = get_object_or_404(Department, id=department_id)
+    
+    # Get ALL students in this department (not just placements)
+    students = User.objects.filter(
+        user_type=1,
+        department=department
+    ).select_related('course').prefetch_related(
+        'student_assignments',
+        'student_assignments__lecturer',
+        'student_assignments__lecturer__user',
+        'placement_forms'
+    ).order_by('first_name', 'last_name')
+    
+    # Available lecturers in this department
+    available_lecturers = Lecturer.objects.filter(
+        department=department, 
+        is_active=True
+    ).annotate(
+        assigned_count=Count('assigned_students'),
+        available_slots=models.F('max_students') - Count('assigned_students')
+    ).select_related('user')
+    
+    context = {
+        'department': department,
+        'students': students,  # Changed from 'placements' to 'students'
+        'available_lecturers': available_lecturers,
+    }
+    
+    return render(request, 'attachments/department_placements.html', context)
+
+
+
+@user_passes_test(is_admin)
+@require_POST
+def assign_student_to_lecturer(request, student_id):
+    """Assign a student to a lecturer from the modal form"""
+    student = get_object_or_404(User, id=student_id, user_type=1)
+    lecturer_id = request.POST.get('lecturer_id')
+    
+    if not lecturer_id:
+        messages.error(request, 'Please select a lecturer.')
+        return redirect('attachments:admin_students')
+    
+    lecturer = get_object_or_404(Lecturer, id=lecturer_id)
+    
+    # Check if student already assigned for this academic year
+    current_year = timezone.now().year
+    existing_assignment = StudentAssignment.objects.filter(
+        student=student,
+        academic_year=current_year
+    ).exists()
+    
+    if existing_assignment:
+        messages.error(request, 'This student is already assigned to a lecturer for this academic year.')
+    else:
+        # Check if lecturer has available slots
+        assigned_count = StudentAssignment.objects.filter(lecturer=lecturer).count()
+        if assigned_count >= lecturer.max_students:
+            messages.error(request, f'Lecturer {lecturer.user.get_full_name()} has reached maximum student capacity.')
+        else:
+            # Get the student's latest placement form (if any)
+            placement_form = student.placement_forms.first()
+            
+            # Create assignment
+            assignment = StudentAssignment(
+                student=student,
+                lecturer=lecturer,
+                placement_form=placement_form,  # This can be None if no placement submitted
+                academic_year=current_year
+            )
+            assignment.save()
+            messages.success(request, 
+                f'Student {student.get_full_name()} successfully assigned to {lecturer.user.get_full_name()}'
+            )
+    
+    return redirect('attachments:admin_students')
+
+@user_passes_test(is_admin)
+def assign_student(request, student_id, lecturer_id):
+    """Quick assign student to lecturer (from department placements page)"""
+    student = get_object_or_404(User, id=student_id, user_type=1)
+    lecturer = get_object_or_404(Lecturer, id=lecturer_id)
+    
+    # Check if student already assigned for this academic year
+    current_year = timezone.now().year
+    existing_assignment = StudentAssignment.objects.filter(
+        student=student,
+        academic_year=current_year
+    ).exists()
+    
+    if existing_assignment:
+        messages.error(request, 'This student is already assigned to a lecturer for this academic year.')
+    else:
+        # Check if lecturer has available slots
+        assigned_count = StudentAssignment.objects.filter(lecturer=lecturer).count()
+        if assigned_count >= lecturer.max_students:
+            messages.error(request, f'Lecturer {lecturer.user.get_full_name()} has reached maximum student capacity.')
+        else:
+            # Get or create placement form for this student
+            placement_form = PlacementFormSubmission.objects.filter(student=student).first()
+            
+            # Create assignment
+            assignment = StudentAssignment(
+                student=student,
+                lecturer=lecturer,
+                placement_form=placement_form,
+                academic_year=current_year
+            )
+            assignment.save()
+            
+            messages.success(request, 
+                f'Student {student.get_full_name()} successfully assigned to {lecturer.user.get_full_name()}'
+            )
+    
+    return redirect('attachments:department_placements', department_id=student.department.id)
+
+
+@user_passes_test(is_admin)
+@require_POST
+def unassign_student(request, assignment_id):
+    """Remove student assignment"""
+    assignment = get_object_or_404(StudentAssignment, id=assignment_id)
+    student_name = assignment.student.get_full_name()
+    assignment.delete()
+    
+    messages.success(request, f'Assignment removed for {student_name}.')
+    return redirect('attachments:admin_students')
+
+
+
+@user_passes_test(is_admin)
+@require_POST
+def delete_lecturer(request, lecturer_id):
+    """Delete a lecturer and their associated user account"""
+    try:
+        lecturer = Lecturer.objects.get(id=lecturer_id)
+        user = lecturer.user
+        lecturer_name = lecturer.user.get_full_name()
+        
+        # Check if lecturer has assigned students
+        if lecturer.assigned_students.exists():
+            messages.error(request, 
+                f'Cannot delete {lecturer_name} because they have assigned students. '
+                f'Please reassign or unassign the students first.'
+            )
+        else:
+            # Delete the lecturer and associated user
+            lecturer.delete()
+            user.delete()
+            messages.success(request, f'Lecturer {lecturer_name} has been deleted successfully.')
+    
+    except Lecturer.DoesNotExist:
+        messages.error(request, 'Lecturer not found.')
+    
+    return redirect('attachments:manage_lecturers')
+
+
+
+@user_passes_test(is_admin)
+def assignment_dashboard(request):
+    """Dedicated page for assigning students to lecturers"""
+    # Get all unassigned STUDENTS (not placements)
+    unassigned_students = User.objects.filter(
+        user_type=1,
+        student_assignments__isnull=True  # Students without assignments
+    ).select_related('department', 'course').order_by('department__name', 'first_name')
+    
+    # Get all active lecturers with their available slots
+    lecturers = Lecturer.objects.filter(is_active=True).annotate(
+        assigned_count=Count('assigned_students'),
+        available_slots=models.F('max_students') - Count('assigned_students')
+    ).select_related('user', 'department').order_by('department__name', 'user__first_name')
+    
+    # Group students by department
+    students_by_department = {}
+    for student in unassigned_students:
+        dept_name = student.department.name if student.department else "No Department"
+        if dept_name not in students_by_department:
+            students_by_department[dept_name] = []
+        students_by_department[dept_name].append(student)
+    
+    # Group lecturers by department (only show those with available slots)
+    lecturers_by_department = {}
+    for lecturer in lecturers:
+        if lecturer.available_slots > 0:  # Only include lecturers with available slots
+            dept_name = lecturer.department.name
+            if dept_name not in lecturers_by_department:
+                lecturers_by_department[dept_name] = []
+            lecturers_by_department[dept_name].append(lecturer)
+    
+    context = {
+        'students_by_department': students_by_department,
+        'lecturers_by_department': lecturers_by_department,
+        'total_unassigned': unassigned_students.count(),
+        'total_lecturers': sum(len(lecturers) for lecturers in lecturers_by_department.values()),
+    }
+    
+    return render(request, 'attachments/assignment_dashboard.html', context)
+
+@user_passes_test(is_admin)
+@require_POST
+def bulk_assign_students(request):
+    """Bulk assign students to lecturers"""
+    assignments = request.POST.getlist('assignments')
+    assigned_count = 0
+    errors = []
+    
+    current_year = timezone.now().year
+    
+    for assignment_str in assignments:
+        if not assignment_str:
+            continue
+            
+        try:
+            student_id, lecturer_id = assignment_str.split('_')
+            student = User.objects.get(id=student_id, user_type=1)
+            lecturer = Lecturer.objects.get(id=lecturer_id)
+            
+            # Check if student already assigned for this academic year
+            existing_assignment = StudentAssignment.objects.filter(
+                student=student,
+                academic_year=current_year
+            ).exists()
+            
+            if existing_assignment:
+                errors.append(f"{student.get_full_name()} is already assigned")
+                continue
+            
+            # Check if lecturer has available slots
+            assigned_count_current = StudentAssignment.objects.filter(lecturer=lecturer).count()
+            if assigned_count_current >= lecturer.max_students:
+                errors.append(f"{lecturer.user.get_full_name()} has no available slots for {student.get_full_name()}")
+                continue
+            
+            # Find placement form by direct query (most reliable)
+            placement_form = PlacementFormSubmission.objects.filter(student=student).first()
+            
+            # Create assignment
+            StudentAssignment.objects.create(
+                student=student,
+                lecturer=lecturer,
+                placement_form=placement_form,  # This can be None if no placement submitted
+                academic_year=current_year
+            )
+            assigned_count += 1
+            
+        except (ValueError, User.DoesNotExist, Lecturer.DoesNotExist):
+            errors.append("Invalid assignment data")
+            continue
+    
+    if assigned_count > 0:
+        messages.success(request, f'Successfully assigned {assigned_count} student(s).')
+    if errors:
+        messages.error(request, f'Could not assign {len(errors)} student(s): {", ".join(errors[:5])}')
+    
+    return redirect('attachments:assignment_dashboard')
+
+
+def get_departments(request):
+    """API endpoint to get departments for a university"""
+    university = request.GET.get('university', 'Machakos University')
+    departments = Department.objects.filter(university=university).values('id', 'name', 'code')
+    return JsonResponse(list(departments), safe=False)
+
+def get_courses(request):
+    """API endpoint to get courses for a department"""
+    department_id = request.GET.get('department_id')
+    if department_id:
+        courses = Course.objects.filter(department_id=department_id, is_active=True).values('id', 'name', 'code')
+        return JsonResponse(list(courses), safe=False)
+    return JsonResponse([], safe=False)
+
+
+@login_required
+@user_passes_test(is_admin)
+def toggle_lecturer(request, lecturer_id):
+    """Activate/Deactivate lecturer account"""
+    try:
+        lecturer = Lecturer.objects.get(id=lecturer_id)
+        lecturer.is_active = not lecturer.is_active
+        lecturer.save()
+        
+        status = "activated" if lecturer.is_active else "deactivated"
+        messages.success(request, f'Lecturer {lecturer.user.get_full_name()} has been {status}.')
+    
+    except Lecturer.DoesNotExist:
+        messages.error(request, 'Lecturer not found.')
+    
+    return redirect('attachments:manage_lecturers')

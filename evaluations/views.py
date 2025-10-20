@@ -9,9 +9,10 @@ from .models import (
     LecturerEvaluation,
     FinalAssessment,
     LogbookEvaluation,
+    IndustrialAttachment,
 )
 from .forms import SupervisorEvaluationForm, LecturerEvaluationForm
-from accounts.decorators import role_required, supervisor_required
+from accounts.decorators import role_required, supervisor_required,lecturer_required
 from django.db.models import Avg
 
 
@@ -164,58 +165,147 @@ def evaluation_form(request, attachment_id):
 
 # ---------------- Lecturer Views ---------------- #
 
+# @login_required
+# @role_required([3])  # Lecturers only
+# def lecturer_dashboard(request):
+#     """Lecturer dashboard shows all attachments and evaluations."""
+#     all_attachments = Attachment.objects.all()
+#     evaluations = LecturerEvaluation.objects.filter(lecturer=request.user)
+
+#     completed_attachments = [eval.attachment for eval in evaluations]
+#     pending_evaluations = all_attachments.count() - len(completed_attachments)
+
+#     return render(request, "evaluations/lecturer_dashboard.html", {
+#         "all_attachments": all_attachments,
+#         "evaluations": evaluations,
+#         "pending_evaluations": pending_evaluations,
+#     })
+
+
 @login_required
-@role_required([3])  # Lecturers only
+@lecturer_required
 def lecturer_dashboard(request):
-    """Lecturer dashboard shows all attachments and evaluations."""
-    all_attachments = Attachment.objects.all()
+    # Get all attachments assigned to this lecturer's students
+    lecturer_attachments = IndustrialAttachment.objects.filter(
+        student__student_assignments__lecturer__user=request.user
+    ).distinct()
+    
+    # Get evaluations done by this lecturer
     evaluations = LecturerEvaluation.objects.filter(lecturer=request.user)
+    
+    context = {
+        'all_attachments': lecturer_attachments,
+        'evaluations': evaluations,
+        'pending_evaluations': lecturer_attachments.count() - evaluations.values('attachment').distinct().count(),
+    }
+    return render(request, 'evaluations/lecturer_dashboard.html', context)
 
-    completed_attachments = [eval.attachment for eval in evaluations]
-    pending_evaluations = all_attachments.count() - len(completed_attachments)
-
-    return render(request, "evaluations/lecturer_dashboard.html", {
-        "all_attachments": all_attachments,
-        "evaluations": evaluations,
-        "pending_evaluations": pending_evaluations,
-    })
 
 
 @login_required
-@role_required([3])
+@lecturer_required
 def grading_panel(request, attachment_id):
-    """Lecturer grades a student, referencing supervisor evaluation."""
-    attachment = get_object_or_404(Attachment, id=attachment_id)
-    criteria_list = EvaluationCriteria.objects.all()
+    attachment = get_object_or_404(IndustrialAttachment, id=attachment_id)
+    
+    # Verify the lecturer is assigned to this student
+    if not attachment.student.student_assignments.filter(lecturer__user=request.user).exists():
+        messages.error(request, "You are not assigned to evaluate this student.")
+        return redirect('evaluations:lecturer_dashboard')
+    
+    criteria = EvaluationCriteria.objects.filter(is_active=True)
+    
+    if request.method == 'POST':
+        total_score = 0
+        total_weight = 0
+        
+        for criterion in criteria:
+            score = request.POST.get(f'score_{criterion.id}')
+            comments = request.POST.get(f'comments_{criterion.id}', '')
+            
+            if score:
+                # Update or create evaluation
+                evaluation, created = LecturerEvaluation.objects.update_or_create(
+                    attachment=attachment,
+                    lecturer=request.user,
+                    criteria=criterion,
+                    defaults={
+                        'score': score,
+                        'comments': comments
+                    }
+                )
+                
+                total_score += float(score) * criterion.weight
+                total_weight += criterion.weight
+        
+        if total_weight > 0:
+            overall_score = (total_score / total_weight) * 10  # Convert to 100-point scale
+            
+            # Calculate grade
+            if overall_score >= 80:
+                grade = 'A'
+            elif overall_score >= 70:
+                grade = 'B'
+            elif overall_score >= 60:
+                grade = 'C'
+            elif overall_score >= 50:
+                grade = 'D'
+            else:
+                grade = 'E'
+            
+            # Create or update final assessment
+            FinalAssessment.objects.update_or_create(
+                attachment=attachment,
+                defaults={
+                    'lecturer': request.user,
+                    'overall_score': overall_score,
+                    'grade': grade,
+                    'comments': request.POST.get('final_comments', '')
+                }
+            )
+            
+            messages.success(request, f"Evaluation submitted successfully! Overall score: {overall_score:.1f}% - Grade: {grade}")
+            return redirect('evaluations:lecturer_dashboard')
+    
+    # Get existing evaluations
+    existing_evaluations = {
+        eval.criteria_id: eval 
+        for eval in LecturerEvaluation.objects.filter(
+            attachment=attachment, 
+            lecturer=request.user
+        )
+    }
+    
+    final_assessment = getattr(attachment, 'final_assessment', None)
+    
+    context = {
+        'attachment': attachment,
+        'criteria': criteria,
+        'existing_evaluations': existing_evaluations,
+        'final_assessment': final_assessment,
+    }
+    return render(request, 'evaluations/grading_panel.html', context)
 
-    supervisor_evaluation = SupervisorEvaluation.objects.filter(attachment=attachment).first()
 
-    existing_evaluation = LecturerEvaluation.objects.filter(
-        attachment=attachment, lecturer=request.user
-    ).first()
-
-    if request.method == "POST":
-        form = LecturerEvaluationForm(request.POST, instance=existing_evaluation, criteria_list=criteria_list)
-        if form.is_valid():
-            evaluation = form.save(commit=False)
-            evaluation.attachment = attachment
-            evaluation.lecturer = request.user
-
-            # Optional: Save per-criteria scores
-            evaluation.criteria_scores = {
-                criteria.id: int(form.cleaned_data.get(f"criteria_{criteria.id}", 3))
-                for criteria in criteria_list
-            }
-            evaluation.save()
-
-            messages.success(request, "Evaluation submitted successfully!")
-            return redirect("evaluations:lecturer_dashboard")
-    else:
-        form = LecturerEvaluationForm(instance=existing_evaluation, criteria_list=criteria_list)
-
-    return render(request, "evaluations/grading_panel.html", {
-        "attachment": attachment,
-        "form": form,
-        "supervisor_evaluation": supervisor_evaluation,
-        "criteria_list": criteria_list,
-    })
+@login_required
+@lecturer_required
+def evaluation_results(request, attachment_id):
+    attachment = get_object_or_404(IndustrialAttachment, id=attachment_id)
+    
+    # Verify the lecturer is assigned to this student
+    if not attachment.student.student_assignments.filter(lecturer__user=request.user).exists():
+        messages.error(request, "You are not assigned to evaluate this student.")
+        return redirect('evaluations:lecturer_dashboard')
+    
+    evaluations = LecturerEvaluation.objects.filter(
+        attachment=attachment, 
+        lecturer=request.user
+    )
+    
+    final_assessment = getattr(attachment, 'final_assessment', None)
+    
+    context = {
+        'attachment': attachment,
+        'evaluations': evaluations,
+        'final_assessment': final_assessment,
+    }
+    return render(request, 'evaluations/evaluation_results.html', context)

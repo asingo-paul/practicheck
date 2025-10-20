@@ -7,21 +7,38 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# Remove lecturer from public choices
+# public registration choices
 PUBLIC_USER_TYPE_CHOICES = [
     (1, 'Student'),
     (2, 'Supervisor'),
-    # Removed lecturer (3) from public registration
+    
 ]
+
+# class UserLoginForm(AuthenticationForm):
+#     username = forms.CharField(
+#         label="Student/Staff ID",
+#         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your ID'})
+#     )
+#     password = forms.CharField(
+#         label="Password",
+#         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter your password'})
+#     )
 
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(
-        label="Student/Staff ID",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your ID'})
+        label="Login Credential",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Enter your credentials',
+            'autofocus': True
+        })
     )
     password = forms.CharField(
         label="Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter your password'})
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Enter your password'
+        })
     )
 
 class UserRegistrationForm(UserCreationForm):
@@ -63,7 +80,7 @@ class UserRegistrationForm(UserCreationForm):
             if student_id and StudentProfile.objects.filter(student_id=student_id).exists():
                 self.add_error('student_id', 'This Student ID is already registered.')
     
-        # Removed lecturer check since they're created by admin
+       
         
         # Check email uniqueness for all users
         email = cleaned_data.get('email')
@@ -95,6 +112,7 @@ class UserRegistrationForm(UserCreationForm):
                     organization=self.cleaned_data['organization'],
                     position=self.cleaned_data['position'],
                     department=self.cleaned_data.get('supervisor_department', '')
+                    
                 )
             # Removed lecturer profile creation
         return user

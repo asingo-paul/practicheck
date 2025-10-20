@@ -15,5 +15,7 @@ urlpatterns = [
     # Lecturer URLs
     path("lecturer/dashboard/", views.lecturer_dashboard, name="lecturer_dashboard"),
     path("lecturer/grading-panel/<int:attachment_id>/", views.grading_panel, name="grading_panel"),
+
+    path('lecturer/results/<int:attachment_id>/', views.evaluation_results, name='evaluation_results'),
     
 ]

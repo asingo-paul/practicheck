@@ -1,3 +1,4 @@
+
 <!-- templates/attachments/dashboard.html -->
 {% extends 'base_student.html' %}
 {% load static %}
@@ -134,7 +135,40 @@
                     </div>
                 </div>
             </div>
-
+            <!-- Assignment Status Card -->
+            <!-- Assignment Status Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-tie me-2"></i>
+                        Lecturer Assigned
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user.student_assignments.exists %}
+                    {% with assignment=user.student_assignments.first %}
+                    <div>
+                        <h6 class="text-success mb-3">
+                            <i class="fas fa-check-circle me-2"></i>Assigned to Supervisor
+                        </h6>
+                        <p class="mb-1"><strong>Lecturer:</strong> {{ assignment.lecturer.user.get_full_name }}</p>
+                        <p class="mb-1"><strong>Department:</strong> {{ assignment.lecturer.department.name }}</p>
+                        <!-- <p class="mb-1"><strong>Staff ID:</strong> {{ assignment.lecturer.staff_id }}</p> -->
+                        <p class="mb-1"><strong>Email:</strong> <a href="mailto:{{ assignment.lecturer.user.email }}">{{ assignment.lecturer.user.email }}</a></p>
+                        <p class="mb-0"><strong>Phone:</strong> {{ assignment.lecturer.phone_number|default:"Not provided" }}</p>
+                        <p class ="mt-3 text-muted"><small>Assigned on {{ assignment.assigned_date|date:"F j, Y" }} for the {{ assignment.academic_year }} academic year.</small></p>
+                    </div>
+                    {% endwith %}
+                    {% else %}
+                    <div>
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-clock me-2"></i>Awaiting Assignment
+                        </h6>
+                        <p class="mb-0 text-muted">You haven't been assigned to a supervisor yet. Please check back later.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             <!-- My Attachments Section -->
             <div class="row mb-4">
                 <div class="col-12">
