@@ -31,11 +31,11 @@
                     {% if user.is_authenticated %}
                     <li class="nav-item">
                         {% if user.user_type == 1 %}
-                            <a class="nav-link" href="{% url 'attachments:dashboard' %}">Dashboard</a>
+                            <a class="nav-link" href="{% url 'attachments:dashboard' %}">Students Dashboard</a>
                         {% elif user.user_type == 2 %}
-                            <a class="nav-link" href="{% url 'evaluations:supervisor_dashboard' %}">Dashboard</a>
+                            <a class="nav-link" href="{% url 'evaluations:supervisor_dashboard' %}">Supervisors Dashboard</a>
                         {% elif user.user_type == 3 %}
-                            <a class="nav-link" href="{% url 'evaluations:lecturer_dashboard' %}">Dashboard</a>
+                            <a class="nav-link" href="{% url 'evaluations:lecturer_dashboard' %}">lectures_Dashboard</a>
                         {% endif %}
                     </li>
                     {% endif %}
@@ -56,7 +56,7 @@
 
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:admin_profile' %}">Profile</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{% url 'accounts:logout' %}" method="post" style="display:inline;">

@@ -46,7 +46,31 @@ urlpatterns = [
     path('admin/lecturers/<int:lecturer_id>/toggle/', views.toggle_lecturer, name='toggle_lecturer'),
     path('lecturers/<int:lecturer_id>/reset-password/', views.reset_lecturer_password, name='reset_lecturer_password'),
     
-    
+    # Students Management URLs
+    path('admin/students/', views.admin_students, name='admin_students'),
+    path('admin/assign-student/<int:placement_id>/', views.assign_student_to_lecturer, name='assign_student_to_lecturer'),
+    path('admin/unassign-student/<int:assignment_id>/', views.unassign_student, name='unassign_student'),
+    # In your urls.py, make sure you have this URL pattern:
+    path('admin/assign/<int:placement_id>/<int:lecturer_id>/', views.assign_student, name='assign_student'),
 
+    # # Assignment URLs
+    # path('admin/assign-student/<int:placement_id>/', views.assign_student_to_lecturer, name='assign_student_to_lecturer'),
+    # path('admin/unassign-student/<int:assignment_id>/', views.unassign_student, name='unassign_student'),
+    # path('admin/assign/<int:placement_id>/<int:lecturer_id>/', views.assign_student, name='assign_student'),
+    path('admin/lecturers/<int:lecturer_id>/delete/', views.delete_lecturer, name='delete_lecturer'),
+    # Assignment URLs
+    path('admin/assignments/', views.assignment_dashboard, name='assignment_dashboard'),
+    path('admin/assignments/bulk-assign/', views.bulk_assign_students, name='bulk_assign_students'),
+    path('admin/assign-student/<int:placement_id>/', views.assign_student_to_lecturer, name='assign_student_to_lecturer'),
+    path('admin/unassign-student/<int:assignment_id>/', views.unassign_student, name='unassign_student'),
+    path('admin/assign/<int:placement_id>/<int:lecturer_id>/', views.assign_student, name='assign_student'),
+
+
+
+     # API endpoints for registration
+    path('api/departments/', views.get_departments, name='api_departments'),
+    path('api/courses/', views.get_courses, name='api_courses'),
+
+    path('admin/lecturers/<int:lecturer_id>/toggle/', views.toggle_lecturer, name='toggle_lecturer'),
 
 ]

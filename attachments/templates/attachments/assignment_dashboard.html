@@ -1,0 +1,355 @@
+<!-- templates/attachments/assignment_dashboard.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Assign Students - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-user-plus me-2"></i>
+            Assign Students to Lecturers
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'attachments:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'attachments:admin_students' %}" class="btn btn-sm btn-info">
+                <i class="fas fa-users me-1"></i> All Students
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Unassigned Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_unassigned }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Available Lecturers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_lecturers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Assignment Progress
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if total_unassigned > 0 %}
+                                {{ total_unassigned }} to assign
+                                {% else %}
+                                All assigned!
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if total_unassigned == 0 %}
+    <!-- All Students Assigned -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
+                    <h3 class="text-success">All Students Are Assigned!</h3>
+                    <p class="text-muted">All students have been assigned to lecturers. Great work!</p>
+                    <a href="{% url 'attachments:admin_students' %}" class="btn btn-primary">
+                        <i class="fas fa-users me-1"></i> View All Students
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Assignment Interface -->
+    <form method="post" action="{% url 'attachments:bulk_assign_students' %}" id="assignmentForm">
+        {% csrf_token %}
+        
+        {% for dept_name, students in students_by_department.items %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-building me-2"></i>
+                            {{ dept_name }}
+                        </h5>
+                        <span class="badge bg-primary">{{ students|length }} unassigned</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Students Column -->
+                            <div class="col-lg-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-user-graduate me-2"></i>
+                                    Unassigned Students
+                                </h6>
+                                <div class="list-group">
+                                    {% for student in students %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ student.get_full_name }}</h6>
+                                                <p class="mb-1 small text-muted">
+                                                    <strong>Student ID:</strong> {{ student.student_id }}<br>
+                                                    <strong>Course:</strong> {{ student.course.name|default:"Not assigned" }}<br>
+                                                    <strong>Year:</strong> {{ student.year_of_study }}<br>
+                                                    <strong>Email:</strong> {{ student.email }}
+                                                </p>
+                                            </div>
+                                            <div class="form-group ms-3">
+                                                <label class="small text-muted">Assign to:</label>
+                                                <select name="assignments" class="form-select form-select-sm assignment-select" 
+                                                        data-student="{{ student.get_full_name }}">
+                                                    <option value="">-- Select Lecturer --</option>
+                                                    
+                                                    <!-- Lecturers from same department -->
+                                                    {% for lecturer_dept, dept_lecturers in lecturers_by_department.items %}
+                                                        {% if lecturer_dept == dept_name %}
+                                                            {% for lecturer in dept_lecturers %}
+                                                            <option value="{{ student.id }}_{{ lecturer.id }}">
+                                                                {{ lecturer.user.get_full_name }} - {{ lecturer.department.name }} ({{ lecturer.available_slots }} slots free)
+                                                            </option>
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    
+                                                    <!-- Cross-department assignment option -->
+                                                    <optgroup label="Other Departments">
+                                                        {% for lecturer_dept, dept_lecturers in lecturers_by_department.items %}
+                                                            {% if lecturer_dept != dept_name %}
+                                                                {% for lecturer in dept_lecturers %}
+                                                                <option value="{{ student.id }}_{{ lecturer.id }}">
+                                                                    {{ lecturer.user.get_full_name }} - {{ lecturer.department.name }} ({{ lecturer.available_slots }} slots free)
+                                                                </option>
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Lecturers Column -->
+                            <div class="col-lg-6">
+                                <h6 class="text-success mb-3">
+                                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                                    Available Lecturers
+                                </h6>
+                                
+                                <!-- Lecturers from same department -->
+                                {% for lecturer_dept, dept_lecturers in lecturers_by_department.items %}
+                                    {% if lecturer_dept == dept_name %}
+                                    <div class="list-group">
+                                        {% for lecturer in dept_lecturers %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">{{ lecturer.user.get_full_name }}</h6>
+                                                    <p class="mb-1 small text-muted">
+                                                        <strong>Staff ID:</strong> {{ lecturer.staff_id }}<br>
+                                                        <strong>Email:</strong> {{ lecturer.user.email }}<br>
+                                                        <strong>Department:</strong> {{ lecturer.department.name }}
+                                                    </p>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge bg-success">
+                                                        {{ lecturer.assigned_count }}/{{ lecturer.max_students }}
+                                                    </span>
+                                                    <br>
+                                                    <small class="text-success">{{ lecturer.available_slots }} slots free</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                {% empty %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    No lecturers with available slots in this department.
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- Show lecturers from other departments -->
+                                {% if lecturers_by_department %}
+                                <h6 class="text-info mt-4 mb-3">
+                                    <i class="fas fa-exchange-alt me-2"></i>
+                                    Lecturers from Other Departments
+                                </h6>
+                                <div class="list-group">
+                                    {% for lecturer_dept, dept_lecturers in lecturers_by_department.items %}
+                                        {% if lecturer_dept != dept_name %}
+                                            {% for lecturer in dept_lecturers %}
+                                            <div class="list-group-item">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-1">{{ lecturer.user.get_full_name }}</h6>
+                                                        <p class="mb-1 small text-muted">
+                                                            <strong>Department:</strong> {{ lecturer.department.name }}<br>
+                                                            <strong>Staff ID:</strong> {{ lecturer.staff_id }}
+                                                        </p>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-info">
+                                                            {{ lecturer.assigned_count }}/{{ lecturer.max_students }}
+                                                        </span>
+                                                        <br>
+                                                        <small class="text-info">{{ lecturer.available_slots }} free</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Submit Button -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Select lecturers for each student, then click the button below to assign them all at once.
+                            <br><small class="text-muted">Only lecturers with available slots are shown.</small>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg" id="assignButton">
+                            <i class="fas fa-user-check me-2"></i>
+                            Assign Selected Students
+                        </button>
+                        <div id="selectedCount" class="mt-2 text-muted">
+                            0 students selected for assignment
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const assignmentSelects = document.querySelectorAll('.assignment-select');
+    const assignButton = document.getElementById('assignButton');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    function updateSelectedCount() {
+        const selected = Array.from(assignmentSelects).filter(select => select.value !== '').length;
+        selectedCount.textContent = `${selected} students selected for assignment`;
+        
+        if (selected > 0) {
+            assignButton.disabled = false;
+            assignButton.classList.remove('btn-secondary');
+            assignButton.classList.add('btn-success');
+        } else {
+            assignButton.disabled = true;
+            assignButton.classList.remove('btn-success');
+            assignButton.classList.add('btn-secondary');
+        }
+    }
+    
+    // Update count when selection changes
+    assignmentSelects.forEach(select => {
+        select.addEventListener('change', updateSelectedCount);
+    });
+    
+    // Form submission confirmation
+    document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+        const selected = Array.from(assignmentSelects).filter(select => select.value !== '').length;
+        if (selected === 0) {
+            e.preventDefault();
+            alert('Please select at least one student to assign.');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to assign ${selected} student(s) to their selected lecturers?`)) {
+            e.preventDefault();
+        }
+    });
+    
+    // Initialize count
+    updateSelectedCount();
+});
+</script>
+
+<style>
+.assignment-select {
+    min-width: 250px;
+}
+
+.list-group-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+}
+
+.list-group-item:hover {
+    border-left-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.card-header {
+    border-bottom: 2px solid #e3e6f0;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+</style>
+{% endblock %}

@@ -22,13 +22,38 @@ class Industry(models.Model):
     def __str__(self):
         return self.name
 
+class Department(models.Model):
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    description = models.TextField(blank=True)
+    university = models.CharField(max_length=200, default="Machakos University")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.university}"
+
+class Course(models.Model):
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='courses')
+    duration_years = models.IntegerField(default=4)
+    is_active = models.BooleanField(default=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+    class Meta:
+        ordering = ['name']
+
 class Attachment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attachments')
     industry = models.ForeignKey(Industry, on_delete=models.SET_NULL, null=True, blank=True)
     organization = models.CharField(max_length=200)
     department = models.CharField(max_length=100, blank=True)
     supervisor_name = models.CharField(max_length=100)
-    supervisor_email = models.EmailField(blank=True)  # Make it optional temporarily
+    supervisor_email = models.EmailField(blank=True)
     supervisor_phone = models.CharField(max_length=15, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -44,7 +69,6 @@ class Attachment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        # this prevent multiple attachments per student at the database level
         constraints = [
             models.UniqueConstraint(fields=['student'], name='unique_student_attachment')
         ]
@@ -70,13 +94,10 @@ class Attachment(models.Model):
         today = timezone.now().date()
             
         if today < self.start_date:
-            # Attachment hasn't started yet
             return 0
         elif today > self.end_date:
-            # Attachment has ended
             return (self.end_date - self.start_date).days
         else:
-            # Attachment is ongoing
             return (today - self.start_date).days
 
     @property
@@ -109,16 +130,11 @@ class Attachment(models.Model):
         today = timezone.now().date()
         
         if today < self.start_date:
-            # Attachment hasn't started yet
             return (self.end_date - self.start_date).days
         elif today > self.end_date:
-            # Attachment has ended
             return 0
         else:
-            # Attachment is ongoing
             return (self.end_date - today).days
-
-   
 
 class LogbookEntry(models.Model):
     attachment = models.ForeignKey(Attachment, on_delete=models.CASCADE, related_name='logbook_entries')
@@ -143,18 +159,6 @@ class LogbookEntry(models.Model):
     
     def can_edit(self):
         return self.edit_count < 2
-
-
-class Department(models.Model):
-    name = models.CharField(max_length=200)
-    #code = models.CharField(max_length=10, unique=True)
-    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
-    description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return self.name
-
 
 class PlacementFormSubmission(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_placement_forms')
@@ -211,8 +215,15 @@ class PlacementFormSubmission(models.Model):
     
     @property
     def is_assigned(self):
-        return hasattr(self, 'student_assignment')
-
+        """Check if student has been assigned to a lecturer"""
+        return hasattr(self, 'student_assignments') and self.student_assignments.exists()
+    
+    @property
+    def student_assignment(self):
+        """Get the student assignment if it exists"""
+        if hasattr(self, 'student_assignments') and self.student_assignments.exists():
+            return self.student_assignments.first()
+        return None
 
 @receiver(post_save, sender=LogbookEntry)
 def send_supervisor_notification(sender, instance, created, **kwargs):
@@ -269,9 +280,6 @@ class Announcement(models.Model):
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
-
-
-
 class Lecturer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='attachment_lecturer')
     staff_id = models.CharField(max_length=20, unique=True)
@@ -289,7 +297,13 @@ class Lecturer(models.Model):
 class StudentAssignment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_assignments')
     lecturer = models.ForeignKey(Lecturer, on_delete=models.CASCADE, related_name='assigned_students')
-    placement_form = models.ForeignKey('PlacementFormSubmission', on_delete=models.CASCADE)
+    placement_form = models.ForeignKey(
+        'PlacementFormSubmission', 
+        on_delete=models.CASCADE, 
+        related_name='student_assignments',
+        null=True,      # Add this
+        blank=True      # Add this
+    )
     assigned_date = models.DateTimeField(auto_now_add=True)
     academic_year = models.CharField(max_length=9)  # e.g., "2024-2025"
     
@@ -298,3 +312,10 @@ class StudentAssignment(models.Model):
     
     def __str__(self):
         return f"{self.student.get_full_name()} -> {self.lecturer.user.get_full_name()}"
+
+
+
+class IndustrialAttachment(models.Model):
+
+    pass
+    # fields here

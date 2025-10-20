@@ -1,0 +1,43 @@
+name: practicheck-django-ci
+
+on:
+  push:
+    banches:
+      - main
+  pull_request:
+    branches:
+      - main # Trigger the workflow on pull requests to the main branch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        
+
+      - name: set up environment
+      - run: |
+          
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install python-dotenv
+          python manage.py collectstatic --noinput || true
+          python manage.py migrate --noinput || true
+
+
+      - name: Run tests
+        run: |
+          python manage.py test

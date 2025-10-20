@@ -48,4 +48,8 @@ urlpatterns = [
     # Admin portal URLs
     path('admin/login/', views.admin_login, name='admin_login'),
     path('admin/portal/', views.admin_portal, name='admin_portal'),
+    path('admin/profile/', views.admin_profile, name='admin_profile'),
+    path('check-student-id/', views.check_student_id, name='check_student_id'),
+
+    
 ]

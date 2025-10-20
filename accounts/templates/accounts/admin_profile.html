@@ -1,0 +1,397 @@
+<!-- templates/accounts/profile.html -->
+{% extends 'admin_base.html' %}
+{% extends 'admin_header.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Admin_Profile - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <!-- Profile Picture Upload -->
+                    <form id="profilePicForm" method="post" enctype="multipart/form-data" action="{% url 'accounts:upload_profile_picture' %}">
+                        {% csrf_token %}
+                        <label for="profileInput" style="cursor: pointer;">
+                            <img id="profilePreview"
+                                 src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=4361ee&color=fff&size=120{% endif %}" 
+                                 alt="Profile Picture" class="rounded-circle mb-2" width="120" height="120">
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary">Change Photo</button>
+                            </div>
+                        </label>
+                        <input type="file" name="profile_picture" id="profileInput" accept="image/*" style="display: none;">
+                    </form>
+                    <h5 class="card-title mt-3">{{ user.get_full_name|default:user.username }}</h5>
+                    <p class="text-muted text-capitalize">{{ user.get_user_type_display }}</p>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#profile-info" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
+                        <i class="fas fa-user me-2"></i>Profile Information
+                    </a>
+                    <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </a>
+                    <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </a>
+                    {% if user.user_type == 1 and user.student_profile %}
+                    <a href="#academic-info" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-graduation-cap me-2"></i>Academic Information
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Content -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Profile Settings</h4>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <!-- Profile Information Tab -->
+                        <div class="tab-pane fade show active" id="profile-info">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h5>Personal Information</h5>
+                                        <p class="text-muted">Update your personal details</p>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_first_name" class="form-label">First Name</label>
+                                        <input type="text" name="first_name" value="{{ user.first_name }}" 
+                                               class="form-control" id="id_first_name" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_last_name" class="form-label">Last Name</label>
+                                        <input type="text" name="last_name" value="{{ user.last_name }}" 
+                                               class="form-control" id="id_last_name" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_email" class="form-label">Email Address</label>
+                                    <input type="email" name="email" value="{{ user.email }}" 
+                                           class="form-control" id="id_email" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_phone_number" class="form-label">Phone Number</label>
+                                    <input type="tel" name="phone_number" value="{{ user.phone_number|default:'' }}" 
+                                           class="form-control" id="id_phone_number">
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <h5 class="mb-3">Profile Type Specific Information</h5>
+                                
+                                {% if user.user_type == 1 and user.student_profile %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_student_id" class="form-label">Student ID</label>
+                                        <input type="text" name="student_id" value="{{ user.student_profile.student_id }}" 
+                                               class="form-control" id="id_student_id" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_course" class="form-label">Course</label>
+                                        <input type="text" name="course" value="{{ user.student_profile.course }}" 
+                                               class="form-control" id="id_course" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_year_of_study" class="form-label">Year of Study</label>
+                                        <input type="number" name="year_of_study" value="{{ user.student_profile.year_of_study }}" 
+                                               class="form-control" id="id_year_of_study" min="1" max="6" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_department" class="form-label">Department</label>
+                                        <input type="text" name="department" value="{{ user.student_profile.department }}" 
+                                               class="form-control" id="id_department" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_university" class="form-label">University</label>
+                                    <input type="text" name="university" value="{{ user.student_profile.university }}" 
+                                           class="form-control" id="id_university" required>
+                                </div>
+                                {% endif %}
+                                
+                                {% if user.user_type == 2 and user.supervisor_profile %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_organization" class="form-label">Organization</label>
+                                        <input type="text" name="organization" value="{{ user.supervisor_profile.organization }}" 
+                                               class="form-control" id="id_organization" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_position" class="form-label">Position</label>
+                                        <input type="text" name="position" value="{{ user.supervisor_profile.position }}" 
+                                               class="form-control" id="id_position" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_department" class="form-label">Department</label>
+                                    <input type="text" name="department" value="{{ user.supervisor_profile.department }}" 
+                                           class="form-control" id="id_department">
+                                </div>
+                                {% endif %}
+                                
+                                {% if user.user_type == 3 and user.lecturer_profile %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_staff_id" class="form-label">Staff ID</label>
+                                        <input type="text" name="staff_id" value="{{ user.lecturer_profile.staff_id }}" 
+                                               class="form-control" id="id_staff_id" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_department" class="form-label">Department</label>
+                                        <input type="text" name="department" value="{{ user.lecturer_profile.department }}" 
+                                               class="form-control" id="id_department" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_faculty" class="form-label">Faculty</label>
+                                    <input type="text" name="faculty" value="{{ user.lecturer_profile.faculty }}" 
+                                           class="form-control" id="id_faculty" required>
+                                </div>
+                                {% endif %}
+                            </form>
+                        </div>
+                        
+                        <!-- Security Tab -->
+                        <div class="tab-pane fade" id="security">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5>Security Settings</h5>
+                                    <p class="text-muted">Manage your password and security preferences</p>
+                                </div>
+                            </div>
+                            
+                            <form action="{% url 'password_change' %}" method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label for="id_old_password" class="form-label">Current Password</label>
+                                    <input type="password" name="old_password" class="form-control" 
+                                           id="id_old_password" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="id_new_password1" class="form-label">New Password</label>
+                                    <input type="password" name="new_password1" class="form-control" 
+                                           id="id_new_password1" required>
+                                    <div class="form-text">Your password must contain at least 8 characters.</div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="id_new_password2" class="form-label">Confirm New Password</label>
+                                    <input type="password" name="new_password2" class="form-control" 
+                                           id="id_new_password2" required>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Update Password</button>
+                            </form>
+                            
+                            <hr class="my-4">
+                            
+                            <h5 class="mb-3">Two-Factor Authentication</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="mb-1">Two-factor authentication adds an extra layer of security to your account.</p>
+                                    <small class="text-muted">Currently disabled</small>
+                                </div>
+                                <button class="btn btn-outline-primary">Enable 2FA</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Notifications Tab -->
+                        <div class="tab-pane fade" id="notifications">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5>Notification Preferences</h5>
+                                    <p class="text-muted">Manage how you receive notifications</p>
+                                </div>
+                            </div>
+                            
+                            <form>
+                                <h6 class="mb-3">Email Notifications</h6>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                    <label class="form-check-label" for="emailNotifications">Email Notifications</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="logbookReminders" checked>
+                                    <label class="form-check-label" for="logbookReminders">Logbook Entry Reminders</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="evaluationAlerts" checked>
+                                    <label class="form-check-label" for="evaluationAlerts">Evaluation Alerts</label>
+                                </div>
+                                <div class="form-check form-switch mb-4">
+                                    <input class="form-check-input" type="checkbox" id="newsletter" checked>
+                                    <label class="form-check-label" for="newsletter">Newsletter and Updates</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Preferences</button>
+                            </form>
+                        </div>
+                        
+                        <!-- Academic Information Tab (Students only) -->
+                        {% if user.user_type == 1 and user.student_profile %}
+                        <div class="tab-pane fade" id="academic-info">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5>Academic Information</h5>
+                                    <p class="text-muted">Your academic details and progress</p>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Student ID</label>
+                                    <p class="form-control-static">{{ user.student_profile.student_id }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Course</label>
+                                    <p class="form-control-static">{{ user.student_profile.course }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Year of Study</label>
+                                    <p class="form-control-static">{{ user.student_profile.year_of_study }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Department</label>
+                                    <p class="form-control-static">{{ user.student_profile.department }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">University</label>
+                                <p class="form-control-static">{{ user.student_profile.university }}</p>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h5 class="mb-3">Attachment Status</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h2 class="text-primary">{{ total_entries }}</h2>
+                                            <p class="text-muted mb-0">Logbook Entries</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h2 class="text-success">{{ completion_rate }}%</h2>
+                                            <p class="text-muted mb-0">Completion Rate</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if logbook_entries %}
+                            <h5 class="mt-4 mb-3">Recent Logbook Entries</h5>
+                            <ul class="list-group">
+                                {% for entry in logbook_entries %}
+                                <li class="list-group-item {% if entry.attachment.is_completed %}list-group-item-success{% endif %}">
+                                    <strong>{{ entry.date|date:"M d, Y" }}:</strong> {{ entry.description }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted">No logbook entries yet.</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-picture img {
+    object-fit: cover;
+}
+
+.list-group-item.active {
+    background-color: #4361ee;
+    border-color: #4361ee;
+}
+
+.form-control-static {
+    padding: 0.375rem 0;
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    color: #4361ee;
+    font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tab functionality
+    const triggerTabList = document.querySelectorAll('[data-bs-toggle="tab"]');
+    triggerTabList.forEach(triggerEl => {
+        new bootstrap.Tab(triggerEl);
+    });
+
+    // Handle form submissions
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+    // Profile picture upload
+    const profileInput = document.getElementById('profileInput');
+    const profileForm = document.getElementById('profilePicForm');
+    const profilePreview = document.getElementById('profilePreview');
+
+    profileInput.addEventListener('change', function() {
+        if (profileInput.files && profileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilePreview.src = e.target.result;
+            }
+            reader.readAsDataURL(profileInput.files[0]);
+            profileForm.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

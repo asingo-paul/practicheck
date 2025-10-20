@@ -1,435 +1,168 @@
-
 {% extends 'base_lecturer.html' %}
 {% load static %}
+{% load custom_filters %}
 
-{% block title %}Grading Panel - PractiCheck{% endblock %}
+{% block title %}Grading Panel - {{ attachment.student.get_full_name }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row">
-        <!-- Sidebar Navigation -->
-        <div class="col-lg-2 col-md-3 d-md-block sidebar collapse bg-dark text-white">
-            <div class="position-sticky pt-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'evaluations:lecturer_dashboard' %}">
-                            <i class="fas fa-tachometer-alt me-2"></i>
-                            Lecturer Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">
-                            <i class="fas fa-clipboard-list me-2"></i>
-                            Grading Panel
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'attachments:dashboard' %}">
-                            <i class="fas fa-user me-2"></i>
-                            Student View
-                        </a>
-                    </li>
-                </ul>
-                
-                <hr class="bg-secondary">
-                
-                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <span>Student Information</span>
-                </h6>
-                <div class="px-3 mb-3">
-                    <div class="text-center mb-3">
-                        <img src="https://ui-avatars.com/api/?name={{ attachment.student.get_full_name }}&background=4e73df&color=fff&size=80" 
-                             alt="{{ attachment.student.get_full_name }}" class="rounded-circle mb-2">
-                        <h6 class="mb-0">{{ attachment.student.get_full_name }}</h6>
-                        <small class="text-muted">{{ attachment.student.email }}</small>
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Grading Panel - {{ attachment.student.get_full_name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Student Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Student Information</h5>
+                            <p><strong>Name:</strong> {{ attachment.student.get_full_name }}</p>
+                            <p><strong>Student ID:</strong> {{ attachment.student.student_id }}</p>
+                            <p><strong>Course:</strong> {{ attachment.course_name }}</p>
+                            <p><strong>Department:</strong> {{ attachment.student.department.name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Attachment Information</h5>
+                            <p><strong>Organization:</strong> {{ attachment.organization }}</p>
+                            <p><strong>Supervisor:</strong> {{ attachment.supervisor_name }}</p>
+                            <p><strong>Period:</strong> {{ attachment.start_date }} to {{ attachment.end_date }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">{{ attachment.status|title }}</span></p>
+                        </div>
                     </div>
-                    <div class="mt-3">
-                        <p class="mb-1"><strong>Organization:</strong> {{ attachment.organization }}</p>
-                        <p class="mb-1"><strong>Supervisor:</strong> 
-                            {% if attachment.supervisor %}
-                            {{ attachment.supervisor.get_full_name }}
-                            {% else %}
-                            <span class="text-muted">Not assigned</span>
-                            {% endif %}
-                        </p>
-                        <p class="mb-0"><strong>Period:</strong> {{ attachment.start_date }} to {{ attachment.end_date }}</p>
-                    </div>
+
+                    <!-- Evaluation Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Criteria</th>
+                                        <th>Description</th>
+                                        <th>Max Score</th>
+                                        <th>Weight</th>
+                                        <th>Score</th>
+                                        <th>Comments</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for criterion in criteria %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ criterion.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ criterion.get_category_display }}</small>
+                                        </td>
+                                        <td>{{ criterion.description }}</td>
+                                        <td>{{ criterion.max_score }}</td>
+                                        <td>{{ criterion.weight }}</td>
+                                        <td>
+                                            <input type="number" 
+                                                   name="score_{{ criterion.id }}" 
+                                                   class="form-control score-input"
+                                                   min="0" 
+                                                   max="{{ criterion.max_score }}" 
+                                                   step="0.5"
+                                                   value="{{ existing_evaluations|custom_filters:get_item:criterion.id|default:0 }}"
+                                                   required>
+                                        </td>
+                                        <td>
+                                            <textarea name="comments_{{ criterion.id }}" 
+                                                      class="form-control" 
+                                                      rows="2"
+                                                      placeholder="Add comments...">{{ existing_evaluations|custom_filters:get_item:criterion.id.comments|default:'' }}</textarea>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Final Comments -->
+                        <div class="mb-4">
+                            <label for="final_comments" class="form-label"><strong>Overall Comments</strong></label>
+                            <textarea name="final_comments" 
+                                      class="form-control" 
+                                      rows="4" 
+                                      placeholder="Provide overall feedback and comments for the student...">{% if final_assessment %}{{ final_assessment.comments }}{% endif %}</textarea>
+                        </div>
+
+                        <!-- Score Summary -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Score Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Current Overall Score:</strong> 
+                                            {% if final_assessment %}
+                                            <span class="badge bg-primary">{{ final_assessment.overall_score|floatformat:1 }}%</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Not evaluated</span>
+                                            {% endif %}
+                                        </p>
+                                        <p><strong>Final Grade:</strong> 
+                                            {% if final_assessment %}
+                                            <span class="badge bg-success">{{ final_assessment.grade }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info">
+                                            <small>
+                                                <strong>Grading Scale:</strong><br>
+                                                A: 80-100% | B: 70-79% | C: 60-69% | D: 50-59% | E: Below 50%
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'evaluations:lecturer_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary">
+                                    <i class="fas fa-save me-2"></i>Save Draft
+                                </button>
+                                <button type="submit" name="action" value="submit_final" class="btn btn-success">
+                                    <i class="fas fa-check-circle me-2"></i>Submit Final Evaluation
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-
-        <!-- Main Content -->
-        <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">Student Grading Panel</h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="window.history.back()">
-                        <i class="fas fa-arrow-left me-1"></i> Back
-                    </button>
-                </div>
-            </div>
-
-            <!-- Student Information -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <h5 class="card-title">Grading: {{ attachment.student.get_full_name }}</h5>
-                                    <p class="card-text">
-                                        Evaluate this student's performance based on their attachment report, 
-                                        logbook entries, and supervisor evaluation.
-                                    </p>
-                                </div>
-                                <div class="col-md-4 text-md-end">
-                                    <div class="d-flex flex-column">
-                                        <span class="badge bg-{% if attachment.lecturer_evaluation %}success{% else %}warning{% endif %} mb-2">
-                                            Evaluation: {% if attachment.lecturer_evaluation %}Completed{% else %}Pending{% endif %}
-                                        </span>
-                                        <small class="text-muted">Due: {{ attachment.end_date }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Supervisor Evaluation Summary -->
-            {% if supervisor_evaluation %}
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-header bg-white">
-                            <h5 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-briefcase me-2"></i>
-                                Supervisor Evaluation Summary
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <h6>Overall Score: {{ supervisor_evaluation.overall_score }}/100</h6>
-                                    <div class="progress mb-3" style="height: 10px;">
-                                        <div class="progress-bar bg-success" 
-                                             style="width: {{ supervisor_evaluation.overall_score }}%"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Evaluation Date: {{ supervisor_evaluation.submitted_date }}</h6>
-                                </div>
-                            </div>
-                            
-                            <h6 class="mb-3">Supervisor Comments:</h6>
-                            <div class="bg-light p-3 rounded mb-4">
-                                <p class="mb-0">{{ supervisor_evaluation.comments }}</p>
-                            </div>
-                            
-                            <h6 class="mb-3">Criteria Scores:</h6>
-                            <div class="row">
-                                {% for criteria_id, score in supervisor_evaluation.criteria_scores.items %}
-                                <div class="col-md-6 mb-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span>Criteria {{ forloop.counter }}:</span>
-                                        <span class="fw-bold">{{ score }}/10</span>
-                                    </div>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-info" style="width: {{ score|multiply:10 }}%"></div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-body text-center py-4">
-                            <i class="fas fa-clock fa-3x text-warning mb-3"></i>
-                            <h5 class="text-warning">Awaiting Supervisor Evaluation</h5>
-                            <p class="text-muted">The supervisor has not yet completed their evaluation for this student.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Lecturer Evaluation Form -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-header bg-white">
-                            <h5 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-chalkboard-teacher me-2"></i>
-                                Lecturer Evaluation
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" id="gradingForm">
-                                {% csrf_token %}
-                                
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Rate the student on a scale of 1-10 for each criterion. Consider the student's report, 
-                                    logbook entries, and overall performance.
-                                </div>
-
-                                <!-- Evaluation Criteria -->
-                                {% for criteria in criteria_list %}
-                                <div class="evaluation-criteria mb-4 pb-3 border-bottom">
-                                    <h6 class="mb-3">{{ forloop.counter }}. {{ criteria.name }}</h6>
-                                    <p class="text-muted small">{{ criteria.description }}</p>
-                                    
-                                    <div class="rating-section">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span class="text-muted">Score (1-10)</span>
-                                            <span class="badge bg-primary" id="score-display-{{ criteria.id }}">5</span>
-                                        </div>
-                                        <input type="range" class="form-range" min="1" max="10" step="1" 
-                                               id="criteria_{{ criteria.id }}" name="criteria_{{ criteria.id }}"
-                                               value="5" oninput="updateScoreDisplay({{ criteria.id }}, this.value)">
-                                        <div class="d-flex justify-content-between">
-                                            <small class="text-muted">1 - Poor</small>
-                                            <small class="text-muted">10 - Excellent</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-
-                                <!-- Overall Comments -->
-                                <div class="mb-4">
-                                    <h6 class="mb-3">Overall Comments</h6>
-                                    <textarea class="form-control" name="comments" rows="6" 
-                                              placeholder="Provide your assessment of the student's performance, considering their report quality, learning outcomes, and professional development...">{% if form.comments.value %}{{ form.comments.value }}{% endif %}</textarea>
-                                </div>
-
-                                <!-- Final Grade Recommendation -->
-                                <div class="mb-4">
-                                    <h6 class="mb-3">Final Grade Recommendation</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <select class="form-select" name="final_grade" id="final_grade">
-                                                <option value="">Select a grade...</option>
-                                                <option value="A">A - Excellent (90-100%)</option>
-                                                <option value="B">B - Good (80-89%)</option>
-                                                <option value="C">C - Satisfactory (70-79%)</option>
-                                                <option value="D">D - Pass (60-69%)</option>
-                                                <option value="F">F - Fail (Below 60%)</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="adjust_supervisor_score">
-                                                <label class="form-check-label" for="adjust_supervisor_score">
-                                                    Adjust supervisor score if necessary
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Signature -->
-                                <div class="mb-4">
-                                    <h6 class="mb-3">Lecturer Confirmation</h6>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="confirmGrading" required>
-                                        <label class="form-check-label" for="confirmGrading">
-                                            I confirm that this evaluation accurately reflects the student's academic 
-                                            performance and learning outcomes during their industrial attachment.
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Form Actions -->
-                                <div class="d-flex justify-content-between">
-                                    <button type="button" class="btn btn-secondary" onclick="window.history.back()">
-                                        <i class="fas fa-times me-1"></i> Cancel
-                                    </button>
-                                    <div>
-                                        <button type="submit" name="save_draft" value="true" class="btn btn-outline-primary me-2">
-                                            <i class="fas fa-save me-1"></i> Save Draft
-                                        </button>
-                                        <button type="submit" name="submit" value="true" class="btn btn-primary">
-                                            <i class="fas fa-paper-plane me-1"></i> Submit Evaluation
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Evaluation Summary -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-header bg-white">
-                            <h5 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-chart-line me-2"></i>
-                                Evaluation Summary
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-md-3 border-end">
-                                    <h4 class="text-primary" id="overallScore">50%</h4>
-                                    <p class="text-muted mb-0">Lecturer Score</p>
-                                </div>
-                                <div class="col-md-3 border-end">
-                                    <h4 class="text-info" id="supervisorScore">
-                                        {% if supervisor_evaluation %}{{ supervisor_evaluation.overall_score }}%{% else %}N/A{% endif %}
-                                    </h4>
-                                    <p class="text-muted mb-0">Supervisor Score</p>
-                                </div>
-                                <div class="col-md-3 border-end">
-                                    <h4 class="text-warning" id="averageScore">5.0</h4>
-                                    <p class="text-muted mb-0">Average Rating</p>
-                                </div>
-                                <div class="col-md-3">
-                                    <h4 class="text-success" id="completionStatus">In Progress</h4>
-                                    <p class="text-muted mb-0">Status</p>
-                                </div>
-                            </div>
-                            
-                            {% if supervisor_evaluation %}
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <h6 class="mb-3">Score Comparison</h6>
-                                    <div class="progress mb-2" style="height: 20px;">
-                                        <div class="progress-bar bg-success" 
-                                             style="width: {{ supervisor_evaluation.overall_score }}%">
-                                            Supervisor: {{ supervisor_evaluation.overall_score }}%
-                                        </div>
-                                        <div class="progress-bar bg-primary" 
-                                             style="width: 50%" id="lecturerScoreBar">
-                                            Lecturer: <span id="lecturerScoreText">50</span>%
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
     </div>
 </div>
-
-<style>
-.evaluation-criteria {
-    padding-bottom: 1.5rem;
-}
-
-.rating-section {
-    background-color: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-}
-
-.progress-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-}
-</style>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-function updateScoreDisplay(criteriaId, value) {
-    document.getElementById(`score-display-${criteriaId}`).textContent = value;
-    calculateOverallScore();
-}
-
-function calculateOverallScore() {
-    // Calculate overall score based on criteria ratings
-    let totalScore = 0;
-    let criteriaCount = 0;
-    
-    {% for criteria in criteria_list %}
-    const criteria{{ criteria.id }}Value = parseInt(document.getElementById('criteria_{{ criteria.id }}').value) || 0;
-    totalScore += criteria{{ criteria.id }}Value;
-    criteriaCount++;
-    {% endfor %}
-    
-    if (criteriaCount > 0) {
-        const averageScore = totalScore / criteriaCount;
-        const overallScore = (averageScore / 10) * 100;
-        
-        document.getElementById('overallScore').textContent = `${overallScore.toFixed(0)}%`;
-        document.getElementById('averageScore').textContent = averageScore.toFixed(1);
-        document.getElementById('lecturerScoreText').textContent = overallScore.toFixed(0);
-        document.getElementById('lecturerScoreBar').style.width = `${overallScore}%`;
-        
-        // Update status based on completion
-        const allRated = Array.from(document.querySelectorAll('.form-range')).every(range => parseInt(range.value) > 0);
-        document.getElementById('completionStatus').textContent = allRated ? 'Completed' : 'In Progress';
-        document.getElementById('completionStatus').className = allRated ? 'text-success' : 'text-warning';
-    }
-}
-
-// Initialize score calculation
 document.addEventListener('DOMContentLoaded', function() {
-    // Set up event listeners for all range inputs
-    {% for criteria in criteria_list %}
-    document.getElementById('criteria_{{ criteria.id }}').addEventListener('input', function() {
-        updateScoreDisplay({{ criteria.id }}, this.value);
+    // Auto-calculate scores
+    const scoreInputs = document.querySelectorAll('.score-input');
+    
+    scoreInputs.forEach(input => {
+        input.addEventListener('change', updateScoreSummary);
     });
-    {% endfor %}
     
-    // Calculate initial scores
-    calculateOverallScore();
-    
-    // Form submission handling
-    const form = document.getElementById('gradingForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const isConfirmed = document.getElementById('confirmGrading').checked;
-            const isSubmit = e.submitter.value === 'true';
-            const finalGrade = document.getElementById('final_grade').value;
-            
-            if (isSubmit && !isConfirmed) {
-                e.preventDefault();
-                alert('Please confirm your evaluation before submitting.');
-                return;
-            }
-            
-            if (isSubmit && !finalGrade) {
-                e.preventDefault();
-                alert('Please select a final grade recommendation.');
-                return;
-            }
-        });
-    }
-    
-    // Set up final grade selection based on score
-    const scoreDisplay = document.getElementById('overallScore');
-    const gradeSelect = document.getElementById('final_grade');
-    
-    if (scoreDisplay && gradeSelect) {
-        // Update grade when score changes
-        const observer = new MutationObserver(function() {
-            const score = parseInt(scoreDisplay.textContent);
-            let grade = '';
-            
-            if (score >= 90) grade = 'A';
-            else if (score >= 80) grade = 'B';
-            else if (score >= 70) grade = 'C';
-            else if (score >= 60) grade = 'D';
-            else grade = 'F';
-            
-            gradeSelect.value = grade;
-        });
-        
-        observer.observe(scoreDisplay, { characterData: true, subtree: true });
+    function updateScoreSummary() {
+        // You can add real-time score calculation here
+        console.log('Score updated');
     }
 });
 </script>
-{% endblock %}
 {% endblock %}

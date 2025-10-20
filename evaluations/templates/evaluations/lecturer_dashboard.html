@@ -1,10 +1,28 @@
-
+<!-- lecturer dashboard.html -->
 {% extends 'base_lecturer.html' %}
 {% load static %}
 
 {% block title %}Lecturer Dashboard - PractiCheck{% endblock %}
 
 {% block content %}
+<style>
+.student-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #28a745 !important;
+}
+.student-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+.student-details p {
+    margin-bottom: 0.3rem;
+}
+.assigned-students-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+</style>
+
 <div class="container-fluid py-4">
     <div class="row">
         <!-- Sidebar Navigation -->
@@ -17,12 +35,12 @@
                             Lecturer Dashboard
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="{% url 'attachments:dashboard' %}">
                             <i class="fas fa-user me-2"></i>
                             Student View
                         </a>
-                    </li>
+                    </li> -->
                     <li class="nav-item mt-4">
                         <a class="nav-link text-warning" href="#">
                             <i class="fas fa-clipboard-list me-2"></i>
@@ -143,12 +161,12 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Average Final Grade
+                                        Assigned Students
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">B+</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ user.attachment_lecturer.assigned_students.count }}</div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-award fa-2x text-gray-300"></i>
+                                    <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
                                 </div>
                             </div>
                         </div>
@@ -156,13 +174,91 @@
                 </div>
             </div>
 
-            <!-- Students Evaluation Status -->
+            <!-- Assigned Students Card with Scroll and Clickable Details -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        My Assigned Students ({{ user.attachment_lecturer.assigned_students.count }})
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if user.attachment_lecturer.assigned_students.exists %}
+                    <div class="assigned-students-container">
+                        <div class="p-3">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-check-circle me-2"></i>Assigned Students
+                            </h6>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for assignment in user.attachment_lecturer.assigned_students.all %}
+                            <div class="list-group-item student-card clickable-student" 
+                                 data-student-id="{{ assignment.student.id }}"
+                                 style="cursor: pointer; border-left: 4px solid #28a745 !important;">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 text-primary">{{ assignment.student.get_full_name }}</h6>
+                                        <div class="student-details">
+                                            <p class="mb-1 small">
+                                                <strong>Student ID:</strong> {{ assignment.student.student_id }}
+                                            </p>
+                                            <p class="mb-1 small">
+                                                <strong>Course:</strong> {{ assignment.placement_form.course_name|default:"Not specified" }}
+                                            </p>
+                                            <p class="mb-1 small">
+                                                <strong>Firm:</strong> {{ assignment.placement_form.firm_name|default:"Not specified" }}
+                                            </p>
+                                            <p class="mb-1 small">
+                                                <strong>Department:</strong> {{ assignment.student.department.name|default:"Not specified" }}
+                                            </p>
+                                            <p class="mb-1 small">
+                                                <strong>Year:</strong> {{ assignment.student.year_of_study|default:"Not specified" }}
+                                            </p>
+                                            <p class="mb-0 small">
+                                                <strong>Email:</strong> {{ assignment.student.email }}
+                                            </p>
+                                        </div>
+                                        {% if assignment.student.phone %}
+                                        <div class="mt-2">
+                                            <p class="mb-0 small">
+                                                <strong>Phone:</strong> {{ assignment.student.phone }}
+                                            </p>
+                                        </div>
+                                        {% endif %}
+                                        <div class="mt-2 pt-2 border-top">
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                Assigned on {{ assignment.assigned_date|date:"M d, Y" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="ms-3 text-end">
+                                        <span class="badge bg-success mb-2">Assigned</span>
+                                        <br>
+                                        <small class="text-muted">Click for details</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-graduate fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Students Assigned</h6>
+                        <p class="text-muted small">You haven't been assigned any students yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Students Evaluation Status - Updated with Supervisor Assignment Status -->
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card shadow">
                         <div class="card-header bg-white py-3">
                             <h5 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-user-graduate me-2"></i>
+                                <i class="fas fa-clipboard-check me-2"></i>
                                 Students Evaluation Status
                             </h5>
                         </div>
@@ -174,7 +270,7 @@
                                         <tr>
                                             <th>Student</th>
                                             <th>Organization</th>
-                                            <th>Supervisor</th>
+                                            <th>Assigned Supervisor</th>
                                             <th>Supervisor Evaluation</th>
                                             <th>Lecturer Evaluation</th>
                                             <th>Final Grade</th>
@@ -191,20 +287,34 @@
                                                     <div>
                                                         <h6 class="mb-0">{{ attachment.student.get_full_name }}</h6>
                                                         <small class="text-muted">{{ attachment.student.email }}</small>
+                                                        <br>
+                                                        <small class="text-muted">ID: {{ attachment.student.student_id }}</small>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>{{ attachment.organization }}</td>
                                             <td>
-                                                {% if attachment.supervisor %}
-                                                {{ attachment.supervisor.get_full_name }}
+                                                {% if attachment.student.student_assignments.exists %}
+                                                {% with assignment=attachment.student.student_assignments.first %}
+                                                <div>
+                                                    <strong>{{ assignment.lecturer.user.get_full_name }}</strong>
+                                                    <br>
+                                                    <small class="text-success">
+                                                        <i class="fas fa-check-circle me-1"></i>Assigned
+                                                    </small>
+                                                    <br>
+                                                    <small class="text-muted">{{ assignment.lecturer.department.name }}</small>
+                                                </div>
+                                                {% endwith %}
                                                 {% else %}
-                                                <span class="text-muted">Not assigned</span>
+                                                <span class="badge bg-warning">Not Assigned</span>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 {% if attachment.supervisor_evaluation %}
                                                 <span class="badge bg-success">Completed</span>
+                                                <br>
+                                                <small>{{ attachment.supervisor_evaluation.overall_score }}/100</small>
                                                 {% else %}
                                                 <span class="badge bg-warning">Pending</span>
                                                 {% endif %}
@@ -212,6 +322,8 @@
                                             <td>
                                                 {% if attachment.lecturer_evaluation %}
                                                 <span class="badge bg-success">Completed</span>
+                                                <br>
+                                                <small>{{ attachment.lecturer_evaluation.overall_score }}/100</small>
                                                 {% else %}
                                                 <span class="badge bg-warning">Pending</span>
                                                 {% endif %}
@@ -230,9 +342,10 @@
                                                    class="btn btn-sm btn-primary">
                                                     <i class="fas fa-edit me-1"></i> Evaluate
                                                 </a>
-                                                <a href="#" class="btn btn-sm btn-outline-secondary">
+                                                <button class="btn btn-sm btn-outline-info view-student-details" 
+                                                        data-student-id="{{ attachment.student.id }}">
                                                     <i class="fas fa-eye"></i>
-                                                </a>
+                                                </button>
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -342,6 +455,27 @@
         </main>
     </div>
 </div>
+
+<!-- Student Details Modal -->
+<div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-labelledby="studentDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="studentDetailsModalLabel">
+                    <i class="fas fa-user-graduate me-2"></i>
+                    Student Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="studentDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -353,6 +487,25 @@ document.addEventListener('DOMContentLoaded', function() {
         lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'All']],
         responsive: true,
         order: [[0, 'asc']]
+    });
+
+    // Make assigned students clickable
+    document.querySelectorAll('.clickable-student, .view-student-details').forEach(element => {
+        element.addEventListener('click', function() {
+            const studentId = this.getAttribute('data-student-id');
+            // For now, just show a simple alert. You can implement AJAX to load student details
+            const studentName = this.querySelector('h6') ? this.querySelector('h6').textContent : 'Student';
+            alert(`Student Details for: ${studentName}\n\nFull student details modal would open here with complete information.`);
+            
+            // You can implement AJAX call here to load student details into the modal
+            // Example:
+            // fetch(`/api/student-details/${studentId}/`)
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         document.getElementById('studentDetailsContent').innerHTML = data.html;
+            //         new bootstrap.Modal(document.getElementById('studentDetailsModal')).show();
+            //     });
+        });
     });
 });
 </script>

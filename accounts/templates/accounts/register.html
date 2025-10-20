@@ -107,8 +107,9 @@
                                         <label class="form-label">Student ID <span class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                            <input type="text" name="student_id" class="form-control" placeholder="Student ID" required>
+                                            <input type="text" name="student_id" class="form-control" placeholder="Student ID" id="student_id_input" required>
                                         </div>
+                                        <div class="form-text" id="student_id_feedback"></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Year of Study <span class="text-danger">*</span></label>
@@ -118,24 +119,19 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <!-- University Selection - Simplified to only Machakos University -->
                                 <div class="mb-3">
                                     <label class="form-label">University <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-university"></i></span>
                                         <select id="university" name="university" class="form-select" required>
-                                            <option value="">Select University</option>
-                                            <option value="mksu">Machakos University</option>
-                                            <option value="uon">University of Nairobi</option>
-                                            <option value="ku">Kenyatta University</option>
-                                            <option value="jkuat">JKUAT</option>
-                                            <option value="mku">Mount Kenya University</option>
-                                            <option value="strathmore">Strathmore University</option>
-                                            <option value="daystar">Daystar University</option>
-                                            <option value="usiu">USIU-Africa</option>
-                                            <option value="cuea">CUEA</option>
+                                            <option value="mksu" selected>Machakos University</option>
                                         </select>
                                     </div>
+                                    <div class="form-text">Currently only Machakos University is supported</div>
                                 </div>
+                                
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Department <span class="text-danger">*</span></label>
@@ -143,6 +139,9 @@
                                             <span class="input-group-text"><i class="fas fa-building"></i></span>
                                             <select id="department" name="department" class="form-select" required>
                                                 <option value="">Select Department</option>
+                                                {% for dept in departments %}
+                                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                                {% endfor %}
                                             </select>
                                         </div>
                                     </div>
@@ -152,6 +151,7 @@
                                             <span class="input-group-text"><i class="fas fa-book"></i></span>
                                             <select id="course" name="course" class="form-select" required>
                                                 <option value="">Select Course</option>
+                                                <!-- Courses will be loaded dynamically -->
                                             </select>
                                         </div>
                                     </div>
@@ -185,8 +185,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- REMOVED LECTURER FIELDS SECTION -->
 
                             <!-- Password Section -->
                             <div class="section-card mb-4">
@@ -386,6 +384,22 @@
         font-size: 0.85rem;
     }
 }
+
+/* Loading spinner for dynamic loading */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
 
 <script>
@@ -393,6 +407,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const studentFields = document.getElementById('studentFields');
     const supervisorFields = document.getElementById('supervisorFields');
     const radios = document.querySelectorAll('input[name="user_type"]');
+    const departmentSelect = document.getElementById('department');
+    const courseSelect = document.getElementById('course');
+    const studentIdInput = document.getElementById('student_id_input');
+    const studentIdFeedback = document.getElementById('student_id_feedback');
 
     function toggleFields() {
         const val = document.querySelector('input[name="user_type"]:checked').value;
@@ -429,75 +447,145 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Dynamic University -> Department -> Course (your existing code)
-    const universitySelect = document.getElementById('university');
-    const departmentSelect = document.getElementById('department');
-    const courseSelect = document.getElementById('course');
-
-    const departments = {
-        mksu: ['Engineering','Education','Agriculture','Health Sciences','Business'],
-        uon: ['Agriculture','Arts','Business','Education','Engineering','Health Sciences','Law','Science'],
-        ku: ['Education','Humanities','Social Sciences','Business'],
-        jkuat: ['Engineering','Agriculture','Health Sciences','Business'],
-        mku: ['Business','Education','Health Sciences','Social Sciences'],
-        strathmore: ['Business','IT','Law'],
-        daystar: ['Education','Communication','Business'],
-        usiu: ['Business','International Relations','IT'],
-        cuea: ['Theology','Business','Law']
-    };
-
-    const courses = {
-        Agriculture: ['Agricultural Economics','Food Science','Crop Protection'],
-        Arts: ['Linguistics','Philosophy','History'],
-        Business: ['Business Administration','Accounting','Marketing'],
-        Education: ['Primary Education','Secondary Education'],
-        Engineering: ['Mechanical Engineering','Civil Engineering','Electrical Engineering'],
-        Health_Sciences: ['Nursing','Public Health','Clinical Medicine'],
-        Law: ['Bachelor of Laws (LLB)'],
-        Science: ['Physics','Chemistry','Biology'],
-        IT: ['Computer Science','Information Technology'],
-        Humanities: ['History','Philosophy','Languages'],
-        Social_Sciences: ['Sociology','Psychology','Political Science'],
-        Communication: ['Mass Communication','Journalism'],
-        Theology: ['Divinity','Religious Studies'],
-        International_Relations: ['IR and Diplomacy']
-    };
-
-    universitySelect.addEventListener('change', function() {
-        const uni = universitySelect.value;
-        departmentSelect.innerHTML = '<option value="">Select Department</option>';
-        courseSelect.innerHTML = '<option value="">Select Course</option>';
-        if(departments[uni]) {
-            departments[uni].forEach(dep => {
-                const option = document.createElement('option');
-                option.value = dep;
-                option.textContent = dep;
-                departmentSelect.appendChild(option);
-            });
+    // Student ID availability check
+    studentIdInput.addEventListener('blur', function() {
+        const studentId = this.value.trim();
+        if (studentId.length > 0) {
+            studentIdFeedback.innerHTML = '<span class="loading-spinner"></span> Checking availability...';
+            studentIdFeedback.className = 'form-text text-info';
+            
+            fetch(`/accounts/check-student-id/?student_id=${encodeURIComponent(studentId)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_taken) {
+                        studentIdFeedback.innerHTML = '<i class="fas fa-times-circle text-danger"></i> This Student ID is already registered';
+                        studentIdFeedback.className = 'form-text text-danger';
+                        studentIdInput.setCustomValidity('Student ID already exists');
+                    } else {
+                        studentIdFeedback.innerHTML = '<i class="fas fa-check-circle text-success"></i> Student ID is available';
+                        studentIdFeedback.className = 'form-text text-success';
+                        studentIdInput.setCustomValidity('');
+                    }
+                })
+                .catch(error => {
+                    studentIdFeedback.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Error checking availability';
+                    studentIdFeedback.className = 'form-text text-warning';
+                });
+        } else {
+            studentIdFeedback.innerHTML = '';
+            studentIdInput.setCustomValidity('');
         }
     });
 
+    // Dynamic Course loading based on Department selection
     departmentSelect.addEventListener('change', function() {
-        const dep = departmentSelect.value.replace(/ /g,'_');
+        const departmentId = this.value;
         courseSelect.innerHTML = '<option value="">Select Course</option>';
-        if(courses[dep]) {
-            courses[dep].forEach(course => {
-                const option = document.createElement('option');
-                option.value = course;
-                option.textContent = course;
-                courseSelect.appendChild(option);
+        
+        if (!departmentId) return;
+
+        // Show loading state
+        const loadingOption = document.createElement('option');
+        loadingOption.value = '';
+        loadingOption.textContent = 'Loading courses...';
+        loadingOption.disabled = true;
+        courseSelect.appendChild(loadingOption);
+
+        // Fetch courses for the selected department
+        fetch(`/attachments/api/courses/?department_id=${departmentId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(courses => {
+                courseSelect.innerHTML = '<option value="">Select Course</option>';
+                
+                if (courses.length === 0) {
+                    const noCourseOption = document.createElement('option');
+                    noCourseOption.value = '';
+                    noCourseOption.textContent = 'No courses available for this department';
+                    noCourseOption.disabled = true;
+                    courseSelect.appendChild(noCourseOption);
+                } else {
+                    courses.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.id;
+                        option.textContent = course.name;
+                        courseSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading courses:', error);
+                courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+                const errorOption = document.createElement('option');
+                errorOption.value = '';
+                errorOption.textContent = 'Error loading courses. Please try again.';
+                errorOption.disabled = true;
+                courseSelect.appendChild(errorOption);
             });
-        }
     });
 
     // Form validation
     const form = document.querySelector('.needs-validation');
     form.addEventListener('submit', function(event) {
-        if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
+        // Validate student ID availability
+        if (document.querySelector('input[name="user_type"]:checked').value === '1') {
+            const studentId = studentIdInput.value.trim();
+            if (studentId) {
+                // Perform synchronous check on form submission
+                fetch(`/accounts/check-student-id/?student_id=${encodeURIComponent(studentId)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.is_taken) {
+                            event.preventDefault();
+                            studentIdFeedback.innerHTML = '<i class="fas fa-times-circle text-danger"></i> This Student ID is already registered';
+                            studentIdFeedback.className = 'form-text text-danger';
+                            studentIdInput.setCustomValidity('Student ID already exists');
+                            studentIdInput.reportValidity();
+                        } else {
+                            studentIdInput.setCustomValidity('');
+                            if (!form.checkValidity()) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                            form.classList.add('was-validated');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking student ID:', error);
+                        if (!form.checkValidity()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    });
+            } else {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }
+        } else {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
         }
-        form.classList.add('was-validated');
+    });
+
+    // Real-time validation for student ID format
+    studentIdInput.addEventListener('input', function() {
+        const studentId = this.value.trim();
+        if (studentId.length > 0 && !/^[A-Za-z0-9/-]+$/.test(studentId)) {
+            this.setCustomValidity('Student ID can only contain letters, numbers, and hyphens');
+        } else {
+            this.setCustomValidity('');
+        }
     });
 });
 </script>

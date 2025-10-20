@@ -1,0 +1,394 @@
+<!-- templates/attachments/admin_students.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Manage Students - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Manage Students</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'attachments:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'attachments:assignment_dashboard' %}" class="btn btn-sm btn-success">
+                <i class="fas fa-user-plus me-1"></i> Bulk Assign
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="filter" class="form-label">Assignment Status</label>
+                            <select name="filter" id="filter" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if current_filter == 'all' %}selected{% endif %}>All Students</option>
+                                <option value="assigned" {% if current_filter == 'assigned' %}selected{% endif %}>Assigned Only</option>
+                                <option value="unassigned" {% if current_filter == 'unassigned' %}selected{% endif %}>Unassigned Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="department" class="form-label">Department</label>
+                            <select name="department" id="department" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Departments</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ dept.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <a href="{% url 'attachments:admin_students' %}" class="btn btn-outline-secondary">Clear Filters</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_students }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Assigned Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ assigned_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Unassigned Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ unassigned_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Assignment Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ assignment_rate|floatformat:1 }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    {% if unassigned_count > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        You have {{ unassigned_count }} unassigned student(s). 
+                        <a href="{% url 'attachments:assignment_dashboard' %}" class="alert-link">
+                            Click here to assign them to lecturers
+                        </a>
+                    </div>
+                    <a href="{% url 'attachments:assignment_dashboard' %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Go to Assignment Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Students Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        Students List ({{ students.count }})
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if students %}
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover mb-0" id="studentsTable">
+                            <thead class="sticky-top bg-light">
+                                <tr>
+                                    <th>Student Information</th>
+                                    <th>Academic Details</th>
+                                    <th>Placement Status</th>
+                                    <th>Assignment Status</th>
+                                    <th>Assigned Lecturer</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ student.get_full_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-id-card me-1"></i>{{ student.student_id }}
+                                            <br>
+                                            <i class="fas fa-envelope me-1"></i>{{ student.email }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if student.department %}
+                                        <strong>{{ student.department.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ student.course.name|default:"No Course" }}
+                                            <br>
+                                            Year {{ student.year_of_study }}
+                                        </small>
+                                        {% else %}
+                                        <span class="text-warning">No Department</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% with placement_forms=placement_forms_by_student|get_item:student.id %}
+                                        {% if placement_forms %}
+                                        <span class="badge bg-success">Submitted</span>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ placement_forms.0.firm_name }}
+                                        </small>
+                                        {% else %}
+                                        <span class="badge bg-warning">No Placement</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% with assignment=student.student_assignments.first %}
+                                        {% if assignment %}
+                                        <span class="badge bg-success">Assigned</span>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ assignment.assigned_date|date:"M d, Y" }}
+                                        </small>
+                                        {% else %}
+                                        <span class="badge bg-warning">Not Assigned</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% with assignment=student.student_assignments.first %}
+                                        {% if assignment %}
+                                        <strong>{{ assignment.lecturer.user.get_full_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ assignment.lecturer.staff_id }}
+                                            <br>
+                                            {{ assignment.lecturer.department.name }}
+                                        </small>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% with assignment=student.student_assignments.first %}
+                                        {% if assignment %}
+                                        <!-- Unassign Button -->
+                                        <form method="post" action="{% url 'attachments:unassign_student' assignment.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="return confirm('Are you sure you want to unassign {{ student.get_full_name }}?')">
+                                                <i class="fas fa-user-minus"></i> Unassign
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <!-- Assign Button - Now links to assignment dashboard -->
+                                        {% if student.department %}
+                                        <a href="{% url 'attachments:assignment_dashboard' %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-user-plus"></i> Assign
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small">No Department</span>
+                                        {% endif %}
+                                        {% endif %}
+                                        {% endwith %}
+
+                                        <!-- View Details Button -->
+                                        <button type="button" class="btn btn-sm btn-outline-info mt-1"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#studentModal{{ student.id }}">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Student Details Modal -->
+                                <div class="modal fade" id="studentModal{{ student.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Student Details</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>Personal Information</h6>
+                                                        <p><strong>Name:</strong> {{ student.get_full_name }}</p>
+                                                        <p><strong>Student ID:</strong> {{ student.student_id }}</p>
+                                                        <p><strong>Email:</strong> {{ student.email }}</p>
+                                                        <p><strong>Phone:</strong> {{ student.phone|default:"Not provided" }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>Academic Information</h6>
+                                                        <p><strong>Department:</strong> {{ student.department.name|default:"Not assigned" }}</p>
+                                                        <p><strong>Course:</strong> {{ student.course.name|default:"Not assigned" }}</p>
+                                                        <p><strong>Year of Study:</strong> {{ student.year_of_study }}</p>
+                                                        <p><strong>University:</strong> {{ student.university|default:"Machakos University" }}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {% with placement_forms=placement_forms_by_student|get_item:student.id %}
+                                                {% if placement_forms %}
+                                                <hr>
+                                                <h6>Placement Information</h6>
+                                                {% for placement in placement_forms %}
+                                                <div class="card mb-2">
+                                                    <div class="card-body">
+                                                        <p><strong>Firm:</strong> {{ placement.firm_name }}</p>
+                                                        <p><strong>Supervisor:</strong> {{ placement.supervisor_name }}</p>
+                                                        <p><strong>Period:</strong> {{ placement.start_date|date:"M d, Y" }} - {{ placement.end_date|date:"M d, Y" }}</p>
+                                                        <p><strong>Submitted:</strong> {{ placement.submitted_at|date:"M d, Y H:i" }}</p>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                                {% endif %}
+                                                {% endwith %}
+
+                                                {% with assignment=student.student_assignments.first %}
+                                                {% if assignment %}
+                                                <hr>
+                                                <h6>Assignment Information</h6>
+                                                <p><strong>Lecturer:</strong> {{ assignment.lecturer.user.get_full_name }}</p>
+                                                <p><strong>Staff ID:</strong> {{ assignment.lecturer.staff_id }}</p>
+                                                <p><strong>Department:</strong> {{ assignment.lecturer.department.name }}</p>
+                                                <p><strong>Assigned Date:</strong> {{ assignment.assigned_date|date:"M d, Y" }}</p>
+                                                <p><strong>Academic Year:</strong> {{ assignment.academic_year }}</p>
+                                                {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-graduate fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Students Found</h5>
+                        <p class="text-muted">No students match your current filters.</p>
+                        <a href="{% url 'attachments:admin_students' %}" class="btn btn-primary">Clear Filters</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable for students table
+    $('#studentsTable').DataTable({
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+        responsive: true,
+        order: [[0, 'asc']],
+        paging: true,
+        info: true,
+        searching: true
+    });
+});
+</script>
+
+<style>
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-responsive {
+    border-radius: 0.35rem;
+}
+
+/* Make the Assign button more prominent */
+.btn-primary {
+    font-weight: 500;
+}
+</style>
+{% endblock %}

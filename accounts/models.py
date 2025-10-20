@@ -31,6 +31,35 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+# class CustomUser(AbstractUser):
+#     username = None  # Remove default username
+
+#     USER_TYPE_CHOICES = (
+#         (1, "Student"),
+#         (2, "Supervisor"),
+#         (3, "Lecturer"),
+#         (4, "Admin"),
+#     )
+#     user_type = models.PositiveSmallIntegerField(choices=USER_TYPE_CHOICES, default=1)
+
+#     email = models.EmailField(unique=True)
+#     student_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
+
+#     USERNAME_FIELD = 'email'
+#     REQUIRED_FIELDS = []  # Remove 'username' from required fields
+
+#     objects = CustomUserManager()  # Add this line
+
+#     def __str__(self):
+#         if self.user_type == 1 and hasattr(self, 'student_profile'):
+#             return self.student_profile.student_id
+#         elif self.user_type == 3 and hasattr(self, 'lecturer_profile'):
+#             return self.lecturer_profile.staff_id
+#         elif self.user_type == 2 and hasattr(self, 'supervisor_profile'):
+#             return f"{self.get_full_name()} - {self.supervisor_profile.organization}"
+#         return self.email or f"User {self.id}"
+
+
 class CustomUser(AbstractUser):
     username = None  # Remove default username
 
@@ -43,26 +72,40 @@ class CustomUser(AbstractUser):
     user_type = models.PositiveSmallIntegerField(choices=USER_TYPE_CHOICES, default=1)
 
     email = models.EmailField(unique=True)
+    
+    # Student-specific fields
+    student_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    year_of_study = models.PositiveSmallIntegerField(blank=True, null=True)
+    university = models.CharField(max_length=200, blank=True, null=True)
+    
+    # Supervisor-specific fields
+    organization = models.CharField(max_length=200, blank=True, null=True)
+    position = models.CharField(max_length=100, blank=True, null=True)
+    supervisor_department = models.CharField(max_length=100, blank=True, null=True)
+
+    # Department and Course as ForeignKey (add these)
+    department = models.ForeignKey('attachments.Department', on_delete=models.SET_NULL, null=True, blank=True)
+    course = models.ForeignKey('attachments.Course', on_delete=models.SET_NULL, null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # Remove 'username' from required fields
 
-    objects = CustomUserManager()  # Add this line
+    objects = CustomUserManager()
 
     def __str__(self):
-        if self.user_type == 1 and hasattr(self, 'student_profile'):
-            return self.student_profile.student_id
+        if self.user_type == 1 and self.student_id:
+            return self.student_id
         elif self.user_type == 3 and hasattr(self, 'lecturer_profile'):
             return self.lecturer_profile.staff_id
-        elif self.user_type == 2 and hasattr(self, 'supervisor_profile'):
-            return f"{self.get_full_name()} - {self.supervisor_profile.organization}"
+        elif self.user_type == 2 and self.organization:
+            return f"{self.get_full_name()} - {self.organization}"
         return self.email or f"User {self.id}"
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_profile')
     student_id = models.CharField(max_length=20, unique=True)
     course = models.CharField(max_length=100)
-    year_of_study = models.PositiveSmallIntegerField()
+    year_of_study = models.PositiveSmallIntegerField(null=True, blank=True)  # Allow null
     university = models.CharField(max_length=200)
     department = models.CharField(max_length=100)
 
@@ -75,6 +118,7 @@ class SupervisorProfile(models.Model):
     position = models.CharField(max_length=100)
     email = models.EmailField(null=True, blank=True)
     department = models.CharField(max_length=100, blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.organization}"
