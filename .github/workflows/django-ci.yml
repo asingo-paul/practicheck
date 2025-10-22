@@ -14,9 +14,10 @@ jobs:
 
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      DEBUG: "True"
+      DEBUG: "False"
       EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
       EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+      DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
 
     steps:
       - name: Checkout code
@@ -32,6 +33,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install python-dotenv
+
+      - name: Set up Database
+        run: |
+          echo "Using Railway public PostgreSQL connection..."
+          echo "DATABASE_PUBLIC_URL is set to: ${{ secrets.DATABASE_PUBLIC_URL != '' && '✅ Found' || '❌ Missing' }}"
 
       - name: Run migrations and collect static files
         run: |
