@@ -58,3 +58,5 @@ class RegistrationAndAttachmentTests(TestCase):
             attachment.student = user  # ✅ correct field for your model
             attachment.save()
             print(f"✅ Attachment saved for: {attachment.student.username} at {attachment.organization}")
+
+            print("All tests passed successfully!")
