@@ -2,6 +2,7 @@ import os
 import django
 from django.test import TestCase
 from attachments.forms import AttachmentForm  # ✅ Use the correct form
+# from .models import User
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'practicheck.settings')
 django.setup()

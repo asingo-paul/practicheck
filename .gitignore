@@ -36,4 +36,3 @@ __pycache__/
 .env
 
 .github/
-test_registration.py
