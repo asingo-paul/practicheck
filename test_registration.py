@@ -5,6 +5,8 @@ from attachments.forms import AttachmentForm
 from django.utils import timezone
 from datetime import timedelta
 
+# Setup Django environment
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'practicheck.settings')
 django.setup()
 
