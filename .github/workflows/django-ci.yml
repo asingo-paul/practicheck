@@ -18,6 +18,7 @@ jobs:
       EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
       EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
       DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+      GITHUB_ACTIONS: "true"  # used in settings.py to skip test DB creation
 
     steps:
       - name: Checkout code
@@ -34,16 +35,22 @@ jobs:
           pip install -r requirements.txt
           pip install python-dotenv
 
-      - name: Set up Database
+      - name: Verify Database Connection
         run: |
           echo "Using Railway public PostgreSQL connection..."
-          echo "DATABASE_PUBLIC_URL is set to: ${{ secrets.DATABASE_PUBLIC_URL != '' && '✅ Found' || '❌ Missing' }}"
+          if [ -z "${{ secrets.DATABASE_PUBLIC_URL }}" ]; then
+            echo "❌ DATABASE_PUBLIC_URL is missing!"
+            exit 1
+          else
+            echo "✅ DATABASE_PUBLIC_URL found!"
+          fi
 
       - name: Run migrations and collect static files
         run: |
           python manage.py collectstatic --noinput || true
           python manage.py migrate --noinput || true
 
-      - name: Run tests
+      - name: Run tests using Railway database
         run: |
-          python manage.py test
+          echo "Running tests directly on the Railway PostgreSQL database..."
+          python manage.py test --keepdb
