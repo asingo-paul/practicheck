@@ -1,23 +1,22 @@
 import os
 import django
 from django.test import TestCase
-from attachments.forms import AttachmentForm  # ✅ Use the correct form
-# from .models import User
+from attachments.forms import AttachmentForm
+from django.utils import timezone
+from datetime import timedelta
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'practicheck.settings')
 django.setup()
 
 from accounts.forms import UserRegistrationForm
-from django.utils import timezone
-from datetime import timedelta
 
 
-class RegistrationTest(TestCase):
-    def test_registration(self):
-        print("Testing registration form...")
+class RegistrationAndAttachmentTests(TestCase):
+    def test_registration_and_attachment_submission(self):
+        print("\n--- Testing Registration and Attachment Form ---")
 
-        # Step 1: Test user registration
-        form_data = {
+        # Step 1: Register a new student user
+        registration_data = {
             'username': 'test_student_new',
             'email': 'test_student_new@example.com',
             'first_name': 'Test',
@@ -27,15 +26,14 @@ class RegistrationTest(TestCase):
             'password2': 'testpass123',
         }
 
-        form = UserRegistrationForm(form_data)
-        print(f"Form is valid: {form.is_valid()}")
+        reg_form = UserRegistrationForm(registration_data)
+        print(f"Registration form valid: {reg_form.is_valid()}")
+        self.assertTrue(reg_form.is_valid(), msg=f"Registration form errors: {reg_form.errors}")
 
-        self.assertTrue(form.is_valid(), msg=f"Form errors: {form.errors}")
+        user = reg_form.save(commit=True)
+        print(f"✅ User created: {user.username} (type: {user.user_type})")
 
-        user = form.save(commit=False)
-        print(f"User created (not saved yet): {user.username}, type: {user.user_type}")
-
-        # Step 2: Test Attachment form for this user
+        # Step 2: Create an attachment for that student
         start_date = timezone.now().date() + timedelta(days=5)
         end_date = start_date + timedelta(days=60)
 
@@ -49,13 +47,12 @@ class RegistrationTest(TestCase):
             'end_date': end_date,
         }
 
-        attachment_form = AttachmentForm(attachment_data)
-        print(f"Attachment form valid: {attachment_form.is_valid()}")
-        self.assertTrue(attachment_form.is_valid(), msg=f"Attachment form errors: {attachment_form.errors}")
+        attach_form = AttachmentForm(attachment_data)
+        print(f"Attachment form valid: {attach_form.is_valid()}")
+        self.assertTrue(attach_form.is_valid(), msg=f"Attachment form errors: {attach_form.errors}")
 
-        if attachment_form.is_valid():
-            attachment = attachment_form.save(commit=False)
-            attachment.user = user  # assuming your Attachment model has a 'user' ForeignKey
-            print("Attachment form validated and ready to save.")
-        else:
-            print("Attachment form errors:", attachment_form.errors)
+        if attach_form.is_valid():
+            attachment = attach_form.save(commit=False)
+            attachment.student = user  # ✅ correct field for your model
+            attachment.save()
+            print(f"✅ Attachment saved for: {attachment.student.username} at {attachment.organization}")
