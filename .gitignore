@@ -35,3 +35,5 @@ __pycache__/
 #local environment variables
 .env
 
+.github/
+test_registration.py
