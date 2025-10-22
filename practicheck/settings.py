@@ -103,12 +103,12 @@ WSGI_APPLICATION = 'practicheck.wsgi.application'
 # }
 
 DATABASES = {
-    'default': dj_database_url.parse(config("DATABASE_URL"))
+    'default': dj_database_url.parse(config("DATABASE_PUBLIC_URL"))
 }
 
-if config('DATABASE_URL', default=None):
+if config('DATABASE_PUBLIC_URL', default=None):
     DATABASES = {
-        'default': dj_database_url.parse(config('DATABASE_URL'))
+        'default': dj_database_url.parse(config('DATABASE_PUBLIC_URL'))
     }
 else:
     DATABASES = {
