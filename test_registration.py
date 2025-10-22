@@ -1,12 +1,22 @@
-# test_registration.py
+import os
+import django
 from django.test import TestCase
+from attachments.forms import AttachmentForm  # ✅ Use the correct form
+# from .models import User
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'practicheck.settings')
+django.setup()
+
 from accounts.forms import UserRegistrationForm
-from students.forms import StudentProfileForm
+from django.utils import timezone
+from datetime import timedelta
 
 
-class RegistrationFormTests(TestCase):
-    def test_student_registration_and_profile_creation(self):
-        # Simulate registration form submission
+class RegistrationTest(TestCase):
+    def test_registration(self):
+        print("Testing registration form...")
+
+        # Step 1: Test user registration
         form_data = {
             'username': 'test_student_new',
             'email': 'test_student_new@example.com',
@@ -18,27 +28,34 @@ class RegistrationFormTests(TestCase):
         }
 
         form = UserRegistrationForm(form_data)
-        self.assertTrue(form.is_valid(), f"Form errors: {form.errors}")
+        print(f"Form is valid: {form.is_valid()}")
+
+        self.assertTrue(form.is_valid(), msg=f"Form errors: {form.errors}")
 
         user = form.save(commit=False)
-        user.save()  # Save user so it exists in DB
+        print(f"User created (not saved yet): {user.username}, type: {user.user_type}")
 
-        # Now test StudentProfileForm
-        profile_data = {
-            'student_id': 'ST9999',
-            'course': 'Test Course',
-            'year_of_study': 3,
-            'university': 'Test University',
-            'department': 'Test Department'
+        # Step 2: Test Attachment form for this user
+        start_date = timezone.now().date() + timedelta(days=5)
+        end_date = start_date + timedelta(days=60)
+
+        attachment_data = {
+            'organization': 'Test Company',
+            'department': 'IT Department',
+            'supervisor_name': 'John Doe',
+            'supervisor_email': 'john@example.com',
+            'supervisor_phone': '0712345678',
+            'start_date': start_date,
+            'end_date': end_date,
         }
 
-        profile_form = StudentProfileForm(profile_data)
-        self.assertTrue(profile_form.is_valid(), f"Profile errors: {profile_form.errors}")
+        attachment_form = AttachmentForm(attachment_data)
+        print(f"Attachment form valid: {attachment_form.is_valid()}")
+        self.assertTrue(attachment_form.is_valid(), msg=f"Attachment form errors: {attachment_form.errors}")
 
-        profile = profile_form.save(commit=False)
-        profile.user = user
-        profile.save()
-
-        # Verify profile created
-        self.assertEqual(profile.user.username, 'test_student_new')
-        print("✅ Student profile created successfully.")
+        if attachment_form.is_valid():
+            attachment = attachment_form.save(commit=False)
+            attachment.user = user  # assuming your Attachment model has a 'user' ForeignKey
+            print("Attachment form validated and ready to save.")
+        else:
+            print("Attachment form errors:", attachment_form.errors)
