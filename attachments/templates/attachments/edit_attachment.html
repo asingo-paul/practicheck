@@ -1,5 +1,43 @@
-{% extends 'base.html' %}
+{% extends 'base_student.html' %}
 {% load crispy_forms_tags %}
+
+{% block title %}Edit Attachment - {{ attachment.organization }} - PractiCheck{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.card-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 20px;
+}
+.btn-primary {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    border: none;
+    border-radius: 8px;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #2573a7 100%);
+}
+.btn-secondary {
+    background: #95a5a6;
+    border: none;
+    border-radius: 8px;
+}
+.btn-secondary:hover {
+    background: #7f8c8d;
+}
+.form-control:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -7,7 +45,7 @@
         <div class="col-md-8 offset-md-2">
             <div class="card">
                 <div class="card-header">
-                    <h3>Edit Attachment</h3>
+                    <h3 class="mb-0">Edit Attachment</h3>
                 </div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
