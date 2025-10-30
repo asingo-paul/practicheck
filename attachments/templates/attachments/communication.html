@@ -15,6 +15,14 @@
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">Industrial Attachment Placement</h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
+                    {% if user.is_staff or user.user_type == 4 %}
+                    <div class="btn-group me-2">
+                        <a href="{% url 'attachments:auto_assign_students' %}" class="btn btn-success" 
+                           onclick="return confirm('This will automatically assign all unassigned students to available lecturers. Continue?')">
+                            <i class="fas fa-robot me-1"></i> Auto-Assign All
+                        </a>
+                    </div>
+                    {% endif %}
                     <span class="badge bg-warning">September - December 2025</span>
                 </div>
             </div>
@@ -28,6 +36,172 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Admin View: All Placement Forms -->
+            {% if user.is_staff or user.user_type == 4 %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-info text-white py-3">
+                            <h5 class="m-0">
+                                <i class="fas fa-list me-2"></i>
+                                All Placement Forms ({{ all_placements.count }})
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Department</th>
+                                            <th>Course</th>
+                                            <th>Year</th>
+                                            <th>Firm</th>
+                                            <th>Supervisor</th>
+                                            <th>Period</th>
+                                            <th>Status</th>
+                                            <th>Assignment</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for placement in all_placements %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ placement.student.get_full_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ placement.registration_number }}</small>
+                                            </td>
+                                            <td>{{ placement.department.name|default:"N/A" }}</td>
+                                            <td>{{ placement.course_name }}</td>
+                                            <td>{{ placement.year_of_study }}</td>
+                                            <td>{{ placement.firm_name }}</td>
+                                            <td>{{ placement.supervisor_name }}</td>
+                                            <td>
+                                                {{ placement.start_date|date:"M d" }}<br>
+                                                to {{ placement.end_date|date:"M d, Y" }}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{% if placement.status == 'approved' %}success{% elif placement.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                                    {{ placement.status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if placement.is_assigned %}
+                                                <span class="badge bg-success">Assigned</span>
+                                                <br>
+                                                <small>{{ placement.student_assignment.lecturer.user.get_full_name }}</small>
+                                                {% else %}
+                                                <span class="badge bg-warning">Unassigned</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    {% if not placement.is_assigned %}
+                                                    <a href="{% url 'attachments:department_placements' department_id=placement.department.id %}" 
+                                                       class="btn btn-sm btn-primary" title="Assign Manually">
+                                                        <i class="fas fa-user-plus"></i>
+                                                    </a>
+                                                    {% if placement.department %}
+                                                    <a href="{% url 'attachments:smart_assign_department' department_id=placement.department.id %}" 
+                                                       class="btn btn-sm btn-success" title="Auto-Assign Department"
+                                                       onclick="return confirm('Auto-assign all unassigned students in {{ placement.department.name }} department?')">
+                                                        <i class="fas fa-robot"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-sm btn-info" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#placementModal{{ placement.id }}">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Placement Details Modal -->
+                                        <div class="modal fade" id="placementModal{{ placement.id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Placement Details - {{ placement.student.get_full_name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <h6>Student Information</h6>
+                                                                <p><strong>Name:</strong> {{ placement.student.get_full_name }}</p>
+                                                                <p><strong>Registration:</strong> {{ placement.registration_number }}</p>
+                                                                <p><strong>Course:</strong> {{ placement.course_name }}</p>
+                                                                <p><strong>Year:</strong> {{ placement.year_of_study }}</p>
+                                                                <p><strong>Phone:</strong> {{ placement.phone_number }}</p>
+                                                                <p><strong>Email:</strong> {{ placement.student.email }}</p>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <h6>Firm Information</h6>
+                                                                <p><strong>Firm:</strong> {{ placement.firm_name }}</p>
+                                                                <p><strong>Email:</strong> {{ placement.firm_email }}</p>
+                                                                <p><strong>Location:</strong> {{ placement.town_city }}</p>
+                                                                <p><strong>Landmark:</strong> {{ placement.land_mark }}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mt-3">
+                                                            <div class="col-md-6">
+                                                                <h6>Supervisor Details</h6>
+                                                                <p><strong>Name:</strong> {{ placement.supervisor_name }}</p>
+                                                                <p><strong>Phone:</strong> {{ placement.supervisor_phone }}</p>
+                                                                <p><strong>Email:</strong> {{ placement.supervisor_email }}</p>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <h6>Attachment Period</h6>
+                                                                <p><strong>Start:</strong> {{ placement.start_date|date:"M d, Y" }}</p>
+                                                                <p><strong>End:</strong> {{ placement.end_date|date:"M d, Y" }}</p>
+                                                                <p><strong>Off Days:</strong> {{ placement.off_days|join:", "|default:"None specified" }}</p>
+                                                                <p><strong>Submitted:</strong> {{ placement.submitted_at|date:"M d, Y H:i" }}</p>
+                                                            </div>
+                                                        </div>
+                                                        {% if placement.is_assigned %}
+                                                        <div class="row mt-3">
+                                                            <div class="col-12">
+                                                                <h6>Assignment Information</h6>
+                                                                <div class="alert alert-success">
+                                                                    <p class="mb-1"><strong>Assigned Lecturer:</strong> {{ placement.student_assignment.lecturer.user.get_full_name }}</p>
+                                                                    <p class="mb-1"><strong>Department:</strong> {{ placement.student_assignment.lecturer.department.name }}</p>
+                                                                    <p class="mb-0"><strong>Assigned Date:</strong> {{ placement.student_assignment.assigned_date|date:"M d, Y" }}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        {% if not placement.is_assigned and placement.department %}
+                                                        <a href="{% url 'attachments:smart_assign_department' department_id=placement.department.id %}" 
+                                                           class="btn btn-success">
+                                                            <i class="fas fa-robot me-1"></i> Auto-Assign Department
+                                                        </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="10" class="text-center text-muted py-3">
+                                                No placement forms submitted yet.
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             {% endif %}
 
@@ -58,7 +232,8 @@
             </div>
             {% endif %}
 
-            <!-- Placement Form -->
+            <!-- Student Placement Form (Only for non-admin users) -->
+            {% if not user.is_staff and user.user_type != 4 %}
             <div class="card shadow">
                 <div class="card-header bg-primary text-white py-3">
                     <h5 class="m-0">
@@ -74,6 +249,16 @@
                             You have already submitted the Industrial Attachment Placement Form for September - December 2025 cycle.
                             Your submission was made on {{ existing_submission.submitted_at|date:"F d, Y" }}.
                         </p>
+                        <div class="mt-2">
+                            <strong>Your Submission Details:</strong><br>
+                            <strong>Firm:</strong> {{ existing_submission.firm_name }}<br>
+                            <strong>Supervisor:</strong> {{ existing_submission.supervisor_name }}<br>
+                            <strong>Period:</strong> {{ existing_submission.start_date|date:"M d, Y" }} - {{ existing_submission.end_date|date:"M d, Y" }}<br>
+                            <strong>Status:</strong> 
+                            <span class="badge bg-{% if existing_submission.status == 'approved' %}success{% elif existing_submission.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                {{ existing_submission.status|title }}
+                            </span>
+                        </div>
                     </div>
                     {% else %}
                     <form method="post" id="placementForm">
@@ -284,6 +469,7 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
         </main>
     </div>
 </div>
@@ -314,6 +500,7 @@
     border: none;
     box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
 }
+
 /* Optional: Improve mobile spacing */
 @media (max-width: 768px) {
     .section-card {
@@ -334,6 +521,17 @@
     .btn {
         padding: 10px 16px;
     }
+}
+
+/* Auto-assignment button styling */
+.btn-success {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+}
+
+.btn-success:hover {
+    background: linear-gradient(45deg, #218838, #1e9e8a);
+    transform: translateY(-1px);
 }
 </style>
 {% endblock %}

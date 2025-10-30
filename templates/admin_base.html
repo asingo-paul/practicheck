@@ -15,6 +15,251 @@
     <link rel="stylesheet" href="/static/css/style.css">
     
     {% block extra_css %}{% endblock %}
+    
+    <style>
+        .sidebar {
+            background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            padding-top: 70px;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        
+        .sidebar.collapsed .nav-link span,
+        .sidebar.collapsed .sidebar-brand,
+        .sidebar.collapsed .nav-section,
+        .sidebar.collapsed .dropdown-menu {
+            display: none;
+        }
+        
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            transition: all 0.3s;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+        
+        .sidebar-brand {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .nav-section {
+            padding: 10px 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #bdc3c7;
+            margin-top: 20px;
+        }
+        
+        .sidebar .nav-link {
+            color: #ecf0f1;
+            padding: 12px 20px;
+            margin: 2px 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: #e74c3c;
+            color: white;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .top-bar {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 30px;
+            margin-left: 280px;
+            transition: all 0.3s;
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 280px;
+            z-index: 999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .top-bar.expanded {
+            left: 80px;
+            margin-left: 80px;
+        }
+        
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .toggle-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #3498db, #9b59b6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Dropdown Styles */
+        .dropdown-menu {
+            background: rgba(44, 62, 80, 0.95);
+            border: none;
+            border-radius: 8px;
+            margin: 5px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .dropdown-item {
+            color: #ecf0f1;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 2px 5px;
+            transition: all 0.3s;
+        }
+        
+        .dropdown-item:hover {
+            background-color: rgba(52, 152, 219, 0.3);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .dropdown-toggle::after {
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+        
+        .dropdown-toggle[aria-expanded="true"]::after {
+            transform: rotate(180deg);
+        }
+        
+        .department-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 80px;
+            }
+            
+            .sidebar .nav-link span,
+            .sidebar .sidebar-brand,
+            .sidebar .nav-section,
+            .sidebar .dropdown-menu {
+                display: none;
+            }
+            
+            .sidebar .nav-link {
+                justify-content: center;
+                padding: 12px;
+            }
+            
+            .main-content {
+                margin-left: 80px;
+            }
+            
+            .top-bar {
+                left: 80px;
+                margin-left: 80px;
+            }
+        }
+        
+        .clickable-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .clickable-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+    </style>
 </head>
 <body>
     <!-- 🔔 Django Messages -->
@@ -39,17 +284,112 @@
     </div>
     {% endif %}
     
-    <!-- Navigation -->
-    {% include 'admin_header.html' %}
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h4 class="mb-0"><i class="fas fa-rocket me-2"></i> <span>Admin Center</span></h4>
+        </div>
+        
+        <div class="nav-section">Dashboard</div>
+        <a href="{% url 'attachments:admin_dashboard' %}" class="nav-link active">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Overview</span>
+        </a>
+        
+        <div class="nav-section">Student Management</div>
+        <a href="{% url 'attachments:admin_students' %}" class="nav-link">
+            <i class="fas fa-users"></i>
+            <span>All Students</span>
+        </a>
+        <a href="{% url 'attachments:admin_students' %}?filter=assigned" class="nav-link">
+            <i class="fas fa-user-check"></i>
+            <span>Assigned Students</span>
+        </a>
+        <a href="{% url 'attachments:assignment_dashboard' %}" class="nav-link">
+            <i class="fas fa-user-plus"></i>
+            <span>Assign Students</span>
+        </a>
+        <a href="/admin/auth/user/add/" class="nav-link" target="_blank">
+            <i class="fas fa-user-edit"></i>
+            <span>Manual Registration</span>
+        </a>
+        
+        <div class="nav-section">Lecturer Management</div>
+        <a href="{% url 'attachments:manage_lecturers' %}" class="nav-link">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Manage Lecturers</span>
+        </a>
+        <a href="{% url 'attachments:workload_overview' %}" class="nav-link">
+            <i class="fas fa-chart-bar"></i>
+            <span>Workload Overview</span>
+        </a>
+        
+       
+        <div class="nav-section">Departments</div>
+        <a href="{% url 'attachments:admin_dashboard' %}?view=departments" class="nav-link">
+            <i class="fas fa-building"></i>
+            <span>All Departments</span>
+        </a>
+        
+        <div class="nav-section">Approvals & Reports</div>
+        <a href="{% url 'attachments:pending_approvals' %}" class="nav-link">
+            <i class="fas fa-tasks"></i>
+            <span>Pending Approvals</span>
+            {% if pending_approvals_count > 0 %}
+            <span class="notification-badge">{{ pending_approvals_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'attachments:reports_dashboard' %}" class="nav-link">
+            <i class="fas fa-file-alt"></i>
+            <span>Student Reports</span>
+        </a>
+        <a href="{% url 'attachments:export_data' %}?type=students&format=excel" class="nav-link">
+            <i class="fas fa-download"></i>
+            <span>Export Data</span>
+        </a>
+        
+        <div class="nav-section">System</div>
+        <a href="/admin/" class="nav-link" target="_blank">
+            <i class="fas fa-cog"></i>
+            <span>Admin Panel</span>
+        </a>
+        <a href="{% url 'logout' %}" class="nav-link">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
     
+    <!-- Top Bar -->
+    <div class="top-bar" id="topBar">
+        <button class="toggle-btn" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="user-info">
+            <div class="d-flex align-items-center gap-3">
+                <div class="position-relative">
+                    <i class="fas fa-bell text-muted fs-5"></i>
+                    {% if pending_approvals_count > 0 %}
+                    <span class="notification-badge">{{ pending_approvals_count }}</span>
+                    {% endif %}
+                </div>
+                <div class="user-avatar">
+                    {{ user.get_full_name|first|upper }}
+                </div>
+                <div>
+                    <strong>{{ user.get_full_name }}</strong>
+                    <div class="text-muted small">Administrator</div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Main Content -->
-    <main>
-        {% block content %}{% endblock %}
+    <main class="main-content" id="mainContent">
+        <div style="padding-top: 80px;">
+            {% block content %}{% endblock %}
+        </div>
     </main>
-    
-    <!-- Footer -->
-    {% include 'footer.html' %}
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -59,6 +399,83 @@
     
     <!-- Custom JS -->
     <script src="/static/js/main.js"></script>
+    
+    <script>
+        // Sidebar toggle functionality
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const topBar = document.getElementById('topBar');
+            
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            topBar.classList.toggle('expanded');
+            
+            // Update icon
+            const icon = this.querySelector('i');
+            if (sidebar.classList.contains('collapsed')) {
+                icon.className = 'fas fa-bars';
+            } else {
+                icon.className = 'fas fa-bars';
+            }
+        });
+        
+        // Auto-hide sidebar on mobile
+        function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const topBar = document.getElementById('topBar');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                topBar.classList.add('expanded');
+            } else {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+                topBar.classList.remove('expanded');
+            }
+        }
+        
+        // Initial check
+        handleResize();
+        
+        // Listen for resize events
+        window.addEventListener('resize', handleResize);
+        
+        // Set active nav link based on current URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUrl = window.location.href;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                if (link.href === currentUrl) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    const openDropdown = document.querySelector('.dropdown .show');
+                    if (openDropdown) {
+                        bootstrap.Dropdown.getInstance(openDropdown).hide();
+                    }
+                }
+            });
+        });
+        
+        // Custom dropdown behavior for sidebar
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = new bootstrap.Dropdown(this);
+                dropdown.toggle();
+            });
+        });
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>
