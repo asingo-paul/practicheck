@@ -1,0 +1,159 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Manual Student Registration - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Manual Student Registration</h1>
+        <a href="{% url 'attachments:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="m-0 font-weight-bold">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Register New Student
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label">First Name *</label>
+                                <input type="text" name="first_name" class="form-control" id="first_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label">Last Name *</label>
+                                <input type="text" name="last_name" class="form-control" id="last_name" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" name="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="student_id" class="form-label">Student ID *</label>
+                                <input type="text" name="student_id" class="form-control" id="student_id" required>
+                            </div>
+                        </div>
+
+                        <!-- Academic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="year_of_study" class="form-label">Year of Study *</label>
+                                <select name="year_of_study" class="form-select" id="year_of_study" required>
+                                    <option value="">Select Year</option>
+                                    <option value="1">Year 1</option>
+                                    <option value="2">Year 2</option>
+                                    <option value="3">Year 3</option>
+                                    <option value="4">Year 4</option>
+                                    <option value="5">Year 5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="department" class="form-label">Department *</label>
+                                <select name="department" class="form-select" id="department" required>
+                                    <option value="">Select Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="course" class="form-label">Course *</label>
+                                <select name="course" class="form-select" id="course" required>
+                                    <option value="">Select Course</option>
+                                    <!-- Courses will be loaded dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            A secure random password will be generated automatically for the student.
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i> Register Student
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentSelect = document.getElementById('department');
+    const courseSelect = document.getElementById('course');
+
+    // Dynamic Course loading based on Department selection
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = this.value;
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        
+        if (!departmentId) return;
+
+        // Show loading state
+        const loadingOption = document.createElement('option');
+        loadingOption.value = '';
+        loadingOption.textContent = 'Loading courses...';
+        loadingOption.disabled = true;
+        courseSelect.appendChild(loadingOption);
+
+        // Fetch courses for the selected department
+        fetch(`/attachments/api/courses/?department_id=${departmentId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(courses => {
+                courseSelect.innerHTML = '<option value="">Select Course</option>';
+                
+                if (courses.length === 0) {
+                    const noCourseOption = document.createElement('option');
+                    noCourseOption.value = '';
+                    noCourseOption.textContent = 'No courses available for this department';
+                    noCourseOption.disabled = true;
+                    courseSelect.appendChild(noCourseOption);
+                } else {
+                    courses.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.id;
+                        option.textContent = course.name;
+                        courseSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading courses:', error);
+                courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+                const errorOption = document.createElement('option');
+                errorOption.value = '';
+                errorOption.textContent = 'Error loading courses. Please try again.';
+                errorOption.disabled = true;
+                courseSelect.appendChild(errorOption);
+            });
+    });
+});
+</script>
+{% endblock %}

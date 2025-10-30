@@ -102,6 +102,48 @@
         </div>
     </div>
     {% else %}
+
+
+        <!-- Add this section at the top of the assignment dashboard -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="m-0 font-weight-bold">
+                        <i class="fas fa-robot me-2"></i>
+                        Automatic Assignment System
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-3">
+                                The automatic assignment system intelligently assigns students to lecturers based on:
+                            </p>
+                            <ul>
+                                <li><strong>Department matching</strong> - Students are assigned to lecturers in their department</li>
+                                <li><strong>Equal distribution</strong> - Uses round-robin algorithm for fair workload</li>
+                                <li><strong>Available slots</strong> - Only assigns to lecturers with available capacity</li>
+                                <li><strong>Current workload</strong> - Prioritizes lecturers with fewer assigned students</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'attachments:auto_assign_students' %}" 
+                                class="btn btn-success btn-lg" 
+                                onclick="return confirm('This will automatically assign all unassigned students. Continue?')">
+                                    <i class="fas fa-robot me-2"></i> Auto-Assign All Students
+                                </a>
+                                <small class="text-muted text-center">
+                                    {{ total_unassigned }} unassigned students available
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Assignment Interface -->
     <form method="post" action="{% url 'attachments:bulk_assign_students' %}" id="assignmentForm">
         {% csrf_token %}

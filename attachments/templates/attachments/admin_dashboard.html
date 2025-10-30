@@ -1,122 +1,282 @@
-<!-- templates/attachments/admin_dashboard.html -->
 {% extends 'admin_base.html' %}
-
 {% load static %}
 
-{% block title %}Admin Dashboard - PractiCheck{% endblock %}
+{% block title %}Admin Command Center - PractiCheck{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Admin Dashboard</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-                <a href="{% url 'attachments:manage_lecturers' %}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-user-plus me-1"></i> Manage Lecturers
-                </a>
-                <a href="{% url 'attachments:admin_students' %}" class="btn btn-sm btn-info">
-                    <i class="fas fa-users me-1"></i> Manage Students
-                </a>
-                <a href="{% url 'attachments:assignment_dashboard' %}" class="btn btn-sm btn-success">
-                    <i class="fas fa-user-check me-1"></i> Assign Students
-                </a>
-                <button class="btn btn-sm btn-outline-secondary">Export Reports</button>
+    <!-- 🎯 HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">Admin Command Center</h1>
+            <p class="text-muted mb-0">Welcome back, {{ user.get_full_name }} • {{ current_date }}</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- 🚨 ALERT PANEL -->
+    {% if pending_approvals_count > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Attention Needed:</strong>
+                    <span class="ms-2">{{ pending_approvals_count }} pending approvals</span>
+                </div>
+                <div>
+                    <a href="{% url 'attachments:pending_approvals' %}" class="btn btn-sm btn-warning me-2">
+                        Review Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 📊 REAL-TIME METRICS DASHBOARD -->
+    <div class="row mb-4">
+        <!-- Total Students -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <a href="{% url 'attachments:admin_students' %}" class="text-decoration-none">
+                <div class="metric-card border-left-primary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Students
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800">{{ total_students }}</div>
+                            {% if student_growth %}
+                            <div class="mt-2 mb-0 text-success">
+                                <small><i class="fas fa-arrow-up me-1"></i> {{ student_growth }}% growth</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-primary opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Active Lecturers -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <a href="{% url 'attachments:manage_lecturers' %}" class="text-decoration-none">
+                <div class="metric-card border-left-success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Lecturers
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800">{{ total_lecturers }}</div>
+                            <div class="mt-2 mb-0 text-muted">
+                                <small>{{ available_slots }} available slots</small>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-success opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Assigned Students -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <a href="{% url 'attachments:admin_students' %}?filter=assigned" class="text-decoration-none">
+                <div class="metric-card border-left-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Assigned Students
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800">{{ assigned_students_count }}</div>
+                            <div class="mt-2 mb-0 text-success">
+                                <small>{{ assignment_rate }}% assignment rate</small>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-info opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Pending Approvals -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <a href="{% url 'attachments:pending_approvals' %}" class="text-decoration-none">
+                <div class="metric-card border-left-warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Approvals
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800">{{ pending_approvals_count }}</div>
+                            <div class="mt-2 mb-0 text-warning">
+                                <small>Requires attention</small>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-warning opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <a href="{% url 'attachments:reports_dashboard' %}" class="text-decoration-none">
+                <div class="metric-card border-left-danger">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                New Reports
+                            </div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800">{{ new_reports_count }}</div>
+                            <div class="mt-2 mb-0 text-info">
+                                <small>Last 7 days</small>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-danger opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- System Health -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="metric-card border-left-secondary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                            System Health
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">
+                            <span class="text-{% if system_health == 'healthy' %}success{% else %}warning{% endif %}">
+                                {{ system_health|title }}
+                            </span>
+                        </div>
+                        <div class="mt-2 mb-0 text-muted">
+                            <small>Last checked: {{ last_check }}</small>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-heartbeat fa-2x text-{% if system_health == 'healthy' %}success{% else %}warning{% endif %} opacity-25"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards - Now Clickable -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <a href="{% url 'attachments:admin_students' %}" class="card-link text-decoration-none">
-                <div class="card border-left-primary shadow h-100 py-2 clickable-card">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                    Total Students
-                                </div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_students }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-users fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
+    <!-- 📈 ACTIVITY & MONITORING DASHBOARD -->
+    <div class="row">
+        <!-- Recent Student Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Student Activity
+                    </h5>
+                    <a href="{% url 'attachments:admin_students' %}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
-            </a>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Department</th>
+                                <th>Last Activity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in unassigned_students|slice:":10" %}
+                            <tr>
+                                <td>
+                                    <strong>{{ student.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ student.email }}</small>
+                                </td>
+                                <td>{{ student.department.name|default:"No Department" }}</td>
+                                <td>{{ student.last_login|timesince }} ago</td>
+                                <td>
+                                    <span class="badge bg-warning">Unassigned</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    No recent student activity
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <a href="{% url 'attachments:manage_lecturers' %}" class="card-link text-decoration-none">
-                <div class="card border-left-success shadow h-100 py-2 clickable-card">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                    Active Lecturers
-                                </div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_lecturers }}</div>
+        <!-- Recent Placements -->
+        <div class="col-lg-6 mb-4">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-building me-2"></i>
+                        Recent Placement Submissions
+                    </h5>
+                    <a href="{% url 'attachments:reports_dashboard' %}" class="btn btn-sm btn-outline-success">View All</a>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% if recent_placements %}
+                        {% for placement in recent_placements %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ placement.student.get_full_name }}</h6>
+                                <p class="mb-1 small text-muted">
+                                    {{ placement.course_name }} • {{ placement.firm_name }}
+                                </p>
+                                <small class="text-muted">
+                                    Submitted: {{ placement.submitted_at|timesince }} ago
+                                </small>
                             </div>
-                            <div class="col-auto">
-                                <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                            <div class="text-end">
+                                {% if placement.is_assigned %}
+                                <span class="badge bg-success mb-2">Assigned</span>
+                                {% else %}
+                                <span class="badge bg-warning mb-2">Not Assigned</span>
+                                {% endif %}
                             </div>
                         </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Recent Submissions</h5>
                     </div>
+                    {% endif %}
                 </div>
-            </a>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <a href="{% url 'attachments:admin_students' %}?filter=assigned" class="card-link text-decoration-none">
-                <div class="card border-left-info shadow h-100 py-2 clickable-card">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                    Assigned Students
-                                </div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ assigned_students_count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-user-check fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <a href="{% url 'attachments:admin_students' %}?filter=unassigned" class="card-link text-decoration-none">
-                <div class="card border-left-warning shadow h-100 py-2 clickable-card">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                    Unassigned Students
-                                </div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ unassigned_students_count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-user-clock fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Department-wise Placements - GROUPED with Scroll -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <!-- 🏢 DEPARTMENT OVERVIEW -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-building me-2"></i>
-                        Placements by Department
+                        Department Overview
                     </h5>
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-primary" onclick="filterDepartments('all')">All</button>
@@ -124,278 +284,75 @@
                         <button class="btn btn-sm btn-outline-warning" onclick="filterDepartments('unassigned')">Unassigned</button>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-hover mb-0" id="departmentsTable">
-                            <thead class="sticky-top bg-light">
-                                <tr>
-                                    <th>Department</th>
-                                    <th>Total</th>
-                                    <th>Assigned</th>
-                                    <th>Unassigned</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for dept in department_stats %}
-                                <tr class="dept-row clickable-row" 
-                                    data-assigned="{{ dept.assigned_placements }}" 
-                                    data-unassigned="{{ dept.unassigned_placements }}"
-                                    data-href="{% url 'attachments:department_placements' department_id=dept.id %}">
-                                    <td>
-                                        <strong>{{ dept.name }}</strong>
-                                        <br><small class="text-muted">{{ dept.code }}</small>
-                                    </td>
-                                    <td>{{ dept.total_placements }}</td>
-                                    <td>
-                                        <span class="badge bg-success">{{ dept.assigned_placements }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-warning">{{ dept.unassigned_placements }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-3">
-                                        No departments found
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Placements with Assignment Status -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-white py-3">
-                    <h5 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-history me-2"></i>
-                        Recent Placement Submissions
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
-                        {% if recent_placements %}
-                            {% for placement in recent_placements %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">{{ placement.student.get_full_name }}</h6>
-                                    <p class="mb-1 small text-muted">
-                                        {{ placement.course_name }} • {{ placement.firm_name }}
-                                    </p>
-                                    <small class="text-muted">
-                                        Submitted: {{ placement.submitted_at|timesince }} ago
-                                    </small>
-                                </div>
-                                <div class="text-end">
-                                    <!-- Assignment Status -->
-                                    {% if placement.is_assigned %}
-                                    <span class="badge bg-success mb-2">Assigned</span>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover mb-0" id="departmentsTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Department</th>
+                                <th>Total Students</th>
+                                <th>Assigned</th>
+                                <th>Unassigned</th>
+                                <th>Assignment Rate</th>
+                                <th>Recent Reports</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dept in department_stats %}
+                            <tr class="dept-row" 
+                                data-assigned="{{ dept.assigned_placements }}" 
+                                data-unassigned="{{ dept.unassigned_placements }}">
+                                <td>
+                                    <strong>{{ dept.name }}</strong>
                                     <br>
-                                    <small class="text-muted">
-                                        To: {{ placement.student_assignment.lecturer.user.get_full_name }}
-                                    </small>
-                                    {% else %}
-                                    <span class="badge bg-warning mb-2">Not Assigned</span>
-                                    <br>
-                                    <!-- FIX: Check if placement.department exists -->
-                                    {% if placement.department and placement.department.id %}
-                                    <a href="{% url 'attachments:department_placements' department_id=placement.department.id %}" 
-                                       class="btn btn-xs btn-outline-primary mt-1">
-                                        Assign
+                                    <small class="text-muted">{{ dept.code }}</small>
+                                </td>
+                                <td>{{ dept.total_placements }}</td>
+                                <td>
+                                    <span class="badge bg-success">{{ dept.assigned_placements }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning">{{ dept.unassigned_placements }}</span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-info" style="width: {{ dept.assignment_rate }}%;"></div>
+                                    </div>
+                                    <small>{{ dept.assignment_rate }}%</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ dept.recent_reports }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'attachments:department_placements' department_id=dept.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
                                     </a>
-                                    {% else %}
-                                    <span class="text-muted small">No Department</span>
-                                    {% endif %}
-                                    {% endif %}
-                                </div>
-                            </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">
+                                    No departments found
+                                </td>
+                            </tr>
                             {% endfor %}
-                        {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">No Recent Submissions</h5>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Assignment Panel -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-white py-3">
-                    <h5 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user-plus me-2"></i>
-                        Quick Student Assignment
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Unassigned Students</h6>
-                            {% if unassigned_students %}
-                            <div class="list-group" style="max-height: 300px; overflow-y: auto;">
-                                {% for student in unassigned_students|slice:":10" %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>{{ student.student.get_full_name }}</strong>
-                                            <br>
-                                            <small class="text-muted">
-                                                {{ student.course_name }} • 
-                                                {% if student.department %}
-                                                {{ student.department.name }}
-                                                {% else %}
-                                                <span class="text-warning">No Department</span>
-                                                {% endif %}
-                                            </small>
-                                        </div>
-                                        <!-- FIX: Check if student.department exists -->
-                                        {% if student.department and student.department.id %}
-                                        <a href="{% url 'attachments:department_placements' department_id=student.department.id %}" 
-                                           class="btn btn-sm btn-primary">
-                                            Assign
-                                        </a>
-                                        {% else %}
-                                        <span class="text-muted small">No Dept</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% if unassigned_students.count > 10 %}
-                            <div class="text-center mt-2">
-                                <a href="{% url 'attachments:admin_students' %}?filter=unassigned" class="btn btn-sm btn-outline-primary">
-                                    View All {{ unassigned_students.count }} Unassigned Students
-                                </a>
-                            </div>
-                            {% endif %}
-                            {% else %}
-                            <p class="text-muted">All students are assigned!</p>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Recently Assigned</h6>
-                            {% if recent_assignments %}
-                            <div class="list-group" style="max-height: 300px; overflow-y: auto;">
-                                {% for assignment in recent_assignments %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>{{ assignment.student.get_full_name }}</strong>
-                                            <br>
-                                            <small class="text-muted">
-                                                Assigned to: {{ assignment.lecturer.user.get_full_name }}
-                                            </small>
-                                        </div>
-                                        <span class="badge bg-success">Assigned</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            <p class="text-muted">No recent assignments</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lecturer Workload -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-chalkboard-teacher me-2"></i>
-                        Lecturer Workload Overview
-                    </h5>
-                    <a href="{% url 'attachments:manage_lecturers' %}" class="btn btn-sm btn-outline-primary">
-                        Manage All Lecturers
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-hover mb-0">
-                            <thead class="sticky-top bg-light">
-                                <tr>
-                                    <th>Lecturer</th>
-                                    <th>Department</th>
-                                    <th>Staff ID</th>
-                                    <th>Assigned Students</th>
-                                    <th>Available Slots</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for lecturer in lecturer_workload %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ lecturer.user.get_full_name }}</strong>
-                                        <br><small class="text-muted">{{ lecturer.user.email }}</small>
-                                    </td>
-                                    <td>{{ lecturer.department.name }}</td>
-                                    <td>{{ lecturer.staff_id }}</td>
-                                    <td>
-                                        <span class="badge bg-primary">{{ lecturer.assigned_count }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{% if lecturer.available_slots > 0 %}success{% else %}danger{% endif %}">
-                                            {{ lecturer.available_slots }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{% if lecturer.is_active %}success{% else %}secondary{% endif %}">
-                                            {% if lecturer.is_active %}Active{% else %}Inactive{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'attachments:department_placements' department_id=lecturer.department.id %}" 
-                                           class="btn btn-sm btn-outline-primary" title="Assign Students">
-                                            <i class="fas fa-user-plus"></i>
-                                        </a>
-                                        {% if not lecturer.is_active %}
-                                        <form method="post" action="{% url 'attachments:toggle_lecturer' lecturer.id %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Activate Lecturer">
-                                                <i class="fas fa-toggle-on"></i>
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-3">
-                                        No lecturers found
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
+// Dashboard functionality
+function refreshDashboard() {
+    location.reload();
+}
+
 function filterDepartments(type) {
     const rows = document.querySelectorAll('.dept-row');
-    
     rows.forEach(row => {
         const assigned = parseInt(row.getAttribute('data-assigned'));
         const unassigned = parseInt(row.getAttribute('data-unassigned'));
@@ -414,96 +371,37 @@ function filterDepartments(type) {
     });
 }
 
-// Make table rows clickable
+// Initialize DataTable if available
 document.addEventListener('DOMContentLoaded', function() {
-    // Clickable department rows
-    document.querySelectorAll('.clickable-row').forEach(row => {
-        row.addEventListener('click', function() {
-            const href = this.getAttribute('data-href');
-            if (href) {
-                window.location.href = href;
-            }
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#departmentsTable').DataTable({
+            pageLength: 10,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'All']],
+            responsive: true,
+            order: [[0, 'asc']],
+            paging: false,
+            info: false,
+            searching: true
         });
-        
-        // Add hover effect
-        row.style.cursor = 'pointer';
-    });
-    
-    // Add hover effects to clickable cards
-    document.querySelectorAll('.clickable-card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-            this.style.transition = 'all 0.2s ease';
-            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = '';
-        });
-    });
-    
-    // Initialize DataTable for departments table
-    $('#departmentsTable').DataTable({
-        pageLength: 10,
-        lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'All']],
-        responsive: true,
-        order: [[0, 'asc']],
-        // Disable paging since we're using scroll
-        paging: false,
-        info: false,
-        searching: true
-    });
+    }
 });
 </script>
 
 <style>
-.clickable-card {
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
+.border-left-primary { border-left: 4px solid #007bff !important; }
+.border-left-success { border-left: 4px solid #28a745 !important; }
+.border-left-info { border-left: 4px solid #17a2b8 !important; }
+.border-left-warning { border-left: 4px solid #ffc107 !important; }
+.border-left-danger { border-left: 4px solid #dc3545 !important; }
+.border-left-secondary { border-left: 4px solid #6c757d !important; }
 
-.clickable-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-}
-
-.clickable-row:hover {
-    background-color: #f8f9fa !important;
-}
-
-/* Ensure scrollable tables have proper styling */
-.table-responsive {
-    border-radius: 0.35rem;
-}
-
-.sticky-top {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-/* Custom scrollbar for better appearance */
-.table-responsive::-webkit-scrollbar {
-    width: 8px;
-}
-
-.table-responsive::-webkit-scrollbar-track {
-    background: #f1f1f1;
+.progress {
+    background-color: #e9ecef;
     border-radius: 4px;
 }
 
-.table-responsive::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+.progress-bar {
     border-radius: 4px;
-}
-
-.table-responsive::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-.list-group {
-    border-radius: 0.35rem;
 }
 </style>
 {% endblock %}

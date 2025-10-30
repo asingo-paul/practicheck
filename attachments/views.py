@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.db.models import Sum
-from .models import Attachment, LogbookEntry, Industry, ReportUpload,PlacementFormSubmission,Department, Lecturer, StudentAssignment
+from .models import Attachment, LogbookEntry, Industry, ReportUpload, PlacementFormSubmission, Department, Lecturer, StudentAssignment
 from .forms import AttachmentForm, LogbookEntryForm
 import os
 from django.core.exceptions import ValidationError
@@ -22,16 +22,19 @@ import string
 from django.core.mail import send_mail
 from django.conf import settings
 from .email_utils import send_lecturer_credentials, send_lecturer_password_reset
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
-
-
-
-
+import csv
+from django.template.loader import render_to_string
+from weasyprint import HTML
+import io
+from django.core.mail import send_mass_mail
+from django.db.models import Count, Q, Avg, Sum
+from datetime import datetime, timedelta
 
 def index(request):
     """Welcome page for the attachments app"""
     return HttpResponse("Welcome to Attachments App")
-
 
 @login_required
 def dashboard(request):
@@ -39,20 +42,14 @@ def dashboard(request):
     attachments = Attachment.objects.filter(student=request.user)
     recent_entries = LogbookEntry.objects.filter(attachment__student=request.user).order_by('-entry_date')[:5]
     
-    # # Get current attachment (first one or None)
-    # current_attachment = attachments.first() if attachments.exists() else None
-    
     context = {
         'attachments': attachments,
-        # 'current_attachment': current_attachment,
         'recent_entries': recent_entries,
         "today": timezone.now().date(),
     }
     
     return render(request, 'attachments/dashboard.html', context)
 
-
-# attachments/views.py
 @login_required
 def create_attachment(request):
     """Create a new industrial attachment - Only one allowed per user"""
@@ -83,7 +80,6 @@ def create_attachment(request):
     
     return render(request, 'attachments/create_attachment.html', {'form': form})
 
-
 @login_required
 def edit_attachment(request, attachment_id):
     """Edit an existing attachment"""
@@ -103,7 +99,6 @@ def edit_attachment(request, attachment_id):
         form = AttachmentForm(instance=attachment)
     
     return render(request, 'attachments/edit_attachment.html', {'form': form, 'attachment': attachment})
-
 
 @login_required
 def attachment_detail(request, attachment_id):
@@ -131,7 +126,6 @@ def attachment_detail(request, attachment_id):
     
     return render(request, 'attachments/attachment_detail.html', context)
 
-
 @login_required
 def logbook_entry(request, attachment_id):
     """
@@ -145,7 +139,7 @@ def logbook_entry(request, attachment_id):
     existing_entry = LogbookEntry.objects.filter(attachment=attachment, entry_date=today).first()
 
     if existing_entry:
-        messages.warning(request, "You’ve already submitted today’s entry. Please come back tomorrow to add another one.")
+        messages.warning(request, "You've already submitted today's entry. Please come back tomorrow to add another one.")
         return redirect('attachments:logbook', attachment_id=attachment.id)
 
     if request.method == 'POST':
@@ -234,11 +228,6 @@ def logbook(request, attachment_id):
     }
     return render(request, 'attachments/logbook.html', context)
 
-
-
-
-
-
 @login_required
 def edit_previous_entry(request, entry_id):
     """Edit a previous logbook entry"""
@@ -266,7 +255,6 @@ def edit_previous_entry(request, entry_id):
         'attachment': entry.attachment,
         'editing': True
     })
-
 
 @login_required
 def export_logbook(request, attachment_id, format_type):
@@ -356,7 +344,6 @@ def export_logbook(request, attachment_id, format_type):
     
     return HttpResponse("Unsupported export format", status=400)
 
-
 @login_required
 def api_entry_detail(request, entry_id):
     """API endpoint to get entry details for modal"""
@@ -382,24 +369,15 @@ def api_entry_detail(request, entry_id):
     
     return JsonResponse(data)
 
-
-
-
 @login_required
 def upload_report(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id, student=request.user)
-
-    # # Ensure the attachment has ended before allowing uploads
-    # today = timezone.now().date()
-    # if attachment.end_date and today < attachment.end_date:
-    #     messages.error(request, "You can only upload reports after your attachment period has ended.")
-    #     return redirect("attachments:dashboard")
 
     # Check how many reports exist
     reports = attachment.reports.all()
     if request.method == "POST":
         if reports.count() >= 10:
-            messages.error(request, "You can only upload a maximum of 5 reports.")
+            messages.error(request, "You can only upload a maximum of 10 reports.")
             return redirect("attachments:upload_report", attachment_id=attachment.id)
 
         report_file = request.FILES.get("report")
@@ -415,8 +393,6 @@ def upload_report(request, attachment_id):
             messages.error(request, "Please select a file to upload.")
 
     return render(request, "attachments/upload_report.html", {"attachment": attachment, "reports": reports})
-
-
 
 def is_supervisor(user):
     return user.user_type == 2
@@ -461,7 +437,6 @@ def reject_attachment(request, attachment_id):
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
 
-
 @login_required
 def report_upload(request, attachment_id):
     # Get latest report by student
@@ -495,15 +470,13 @@ def report_upload(request, attachment_id):
         'attachment': attachment
     })
 
-
 @login_required
 def delete_report(request, report_id):
-    report = get_object_or_404(ReportUpload, id=report_id)  # <-- ReportUpload here
+    report = get_object_or_404(ReportUpload, id=report_id)
     attachment_id = report.attachment.id
     report.delete()
     messages.success(request, "Report deleted successfully.")
     return redirect('attachments:logbook', attachment_id=attachment_id)
-
 
 @login_required
 def student_dashboard(request):
@@ -517,12 +490,13 @@ def student_dashboard(request):
         'recent_entries': recent_entries,
         'today': timezone.now().date()
     })
+
 def communication(request):
     """Industrial Attachment Placement Form"""
     
     # Get user's attachments (for sidebar)
     attachments = Attachment.objects.filter(student=request.user)
-    current_attachment = attachments.first()  # Get the first attachment for sidebar
+    current_attachment = attachments.first()
     
     # Check if user already submitted placement form for current cycle
     current_year = timezone.now().year
@@ -553,7 +527,7 @@ def communication(request):
                 supervisor_email=request.POST.get('supervisor_email'),
                 start_date=request.POST.get('start_date'),
                 end_date=request.POST.get('end_date'),
-                off_days=request.POST.getlist('off_days')  # Get all checked off days
+                off_days=request.POST.getlist('off_days')
             )
             submission.save()
             
@@ -588,13 +562,11 @@ def send_message(request):
                 body=body,
                 attachment=attachment_file if attachment_file else None
             )
-            # Redirect back to student communication page with active contact
             return redirect(f'/attachments/student_communication/?contact_id={recipient.id}')
 
     return redirect('/attachments/student_communication/')
 
 def evaluations(request):
-    # Your view logic here
     return render(request, 'attachments/assessment.html')
 
 @login_required
@@ -602,7 +574,6 @@ def assessment(request):
     """Assessment view - placeholder for now"""
     return render(request, 'attachments/assessment.html')
 
-# attachments/views.py - Add this function
 def supervisor_logbook(request, attachment_id):
     """Supervisor view of student logbook"""
     try:
@@ -661,11 +632,9 @@ def api_add_supervisor_comment(request, entry_id):
             
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-    
 
 def is_admin(user):
     return user.is_authenticated and (user.is_superuser or getattr(user, 'user_type', None) == 4)
-
 
 @user_passes_test(is_admin)
 def assign_student(request, placement_id, lecturer_id):
@@ -693,7 +662,6 @@ def assign_student(request, placement_id, lecturer_id):
         messages.success(request, f'Student successfully assigned to {lecturer.user.get_full_name()}')
     
     return redirect('attachments:department_placements', department_id=placement.department.id)
-
 
 @login_required
 @user_passes_test(is_admin)
@@ -774,7 +742,6 @@ def manage_lecturers(request):
                 messages.error(request, f'Error creating lecturer: {str(e)}')
         
         elif form_type == 'update_lecturer':
-            # ... (keep your existing update code) ...
             pass
     
     context = {
@@ -795,9 +762,6 @@ def generate_secure_password(length=12):
             any(c in "!@#$%^&*" for c in password)):
             break
     return password
-
-
-
 
 @login_required
 @user_passes_test(is_admin)
@@ -838,7 +802,6 @@ def reset_lecturer_password(request, lecturer_id):
         messages.error(request, f'Error resetting password: {str(e)}')
         return JsonResponse({'success': False, 'error': str(e)})
 
-
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     # Statistics - Count ALL students (registered users with user_type=1)
@@ -850,7 +813,33 @@ def admin_dashboard(request):
     assigned_students_count = StudentAssignment.objects.values('student').distinct().count()
     unassigned_students_count = total_students - assigned_students_count
     
-    # Department-wise statistics - Count ALL students per department
+    # Pending approvals
+    pending_approvals_count = PlacementFormSubmission.objects.filter(status='pending').count() + \
+                            Attachment.objects.filter(status='pending').count()
+    
+    # Recent reports (last 7 days)
+    new_reports_count = ReportUpload.objects.filter(
+        uploaded_at__gte=timezone.now() - timedelta(days=7)
+    ).count()
+    
+    # Student growth (compared to last month)
+    last_month = timezone.now() - timedelta(days=30)
+    students_last_month = User.objects.filter(
+        user_type=1, date_joined__lt=last_month
+    ).count()
+    student_growth = round(((total_students - students_last_month) / students_last_month * 100), 1) if students_last_month > 0 else 0
+    
+    # Available slots
+    available_slots = Lecturer.objects.filter(is_active=True).aggregate(
+        total_slots=Sum('max_students'),
+        used_slots=Count('assigned_students')
+    )
+    available_slots_count = (available_slots['total_slots'] or 0) - (available_slots['used_slots'] or 0)
+    
+    # Assignment rate
+    assignment_rate = round((assigned_students_count / total_students * 100), 1) if total_students > 0 else 0
+    
+    # Department-wise statistics
     departments = Department.objects.all()
     department_stats = []
     
@@ -869,13 +858,24 @@ def admin_dashboard(request):
         # Calculate unassigned
         unassigned_dept_students = total_dept_students - assigned_dept_students
         
+        # Recent reports in this department
+        recent_reports = ReportUpload.objects.filter(
+            attachment__student__department=dept,
+            uploaded_at__gte=timezone.now() - timedelta(days=7)
+        ).count()
+        
+        # Assignment rate
+        dept_assignment_rate = round((assigned_dept_students / total_dept_students * 100), 1) if total_dept_students > 0 else 0
+        
         department_stats.append({
             'id': dept.id,
             'name': dept.name,
             'code': dept.code,
-            'total_placements': total_dept_students,  # Now shows total students
+            'total_placements': total_dept_students,
             'assigned_placements': assigned_dept_students,
             'unassigned_placements': unassigned_dept_students,
+            'recent_reports': recent_reports,
+            'assignment_rate': dept_assignment_rate,
         })
     
     # Recent placements (actual placement submissions)
@@ -892,12 +892,27 @@ def admin_dashboard(request):
     # Quick assignment data - Show unassigned STUDENTS (not placements)
     unassigned_students = User.objects.filter(
         user_type=1,
-        student_assignments__isnull=True  # Students without assignments
+        student_assignments__isnull=True
     ).select_related('department')[:10]
     
     recent_assignments = StudentAssignment.objects.select_related(
         'student', 'lecturer', 'lecturer__user'
     ).order_by('-assigned_date')[:5]
+    
+    # Recent activities (simplified version)
+    recent_activities = []
+    
+    # System notifications
+    system_notifications = [
+        {
+            'title': 'System Running',
+            'message': 'All systems operational',
+            'priority': 'success',
+            'icon': 'check-circle',
+            'timestamp': timezone.now() - timedelta(hours=1),
+            'action_url': None
+        }
+    ]
     
     context = {
         'total_students': total_students,
@@ -905,21 +920,33 @@ def admin_dashboard(request):
         'total_placements': total_placements,
         'assigned_students_count': assigned_students_count,
         'unassigned_students_count': unassigned_students_count,
+        'pending_approvals_count': pending_approvals_count,
+        'new_reports_count': new_reports_count,
+        'student_growth': student_growth,
+        'available_slots': available_slots_count,
+        'assignment_rate': assignment_rate,
         'department_stats': department_stats,
         'recent_placements': recent_placements,
         'lecturer_workload': lecturer_workload,
         'unassigned_students': unassigned_students,
         'recent_assignments': recent_assignments,
-        'current_year': timezone.now().year,
+        'recent_activities': recent_activities,
+        'system_notifications': system_notifications,
+        'notifications_count': len(system_notifications),
+        'system_health': 'healthy',
+        'last_check': timezone.now().strftime('%H:%M'),
+        'current_date': timezone.now().strftime('%B %d, %Y'),
     }
     
     return render(request, 'attachments/admin_dashboard.html', context)
+
 @user_passes_test(is_admin)
 def admin_students(request):
     """Admin view for managing all students and their assignments"""
     # Get filter parameters
     assignment_filter = request.GET.get('filter', 'all')
     department_filter = request.GET.get('department', '')
+    year_filter = request.GET.get('year', '')
     
     # Get ALL registered students (users with user_type=1)
     students = User.objects.filter(user_type=1).select_related(
@@ -939,6 +966,9 @@ def admin_students(request):
     if department_filter:
         students = students.filter(department_id=department_filter)
     
+    if year_filter:
+        students = students.filter(year_of_study=year_filter)
+    
     # Get departments for filter dropdown
     departments = Department.objects.all()
     
@@ -956,23 +986,64 @@ def admin_students(request):
         student_id__in=student_ids
     ).select_related('student')
     
-    # Create a dictionary for quick lookup
+    # Get student reports for the modal
+    student_reports = ReportUpload.objects.filter(
+        attachment__student_id__in=student_ids
+    ).select_related('attachment')
+    
+    # Create dictionaries for quick lookup
     placement_forms_by_student = {}
     for placement in placement_forms:
         if placement.student_id not in placement_forms_by_student:
             placement_forms_by_student[placement.student_id] = []
         placement_forms_by_student[placement.student_id].append(placement)
     
+    student_reports_by_student = {}
+    for report in student_reports:
+        if report.attachment.student_id not in student_reports_by_student:
+            student_reports_by_student[report.attachment.student_id] = []
+        student_reports_by_student[report.attachment.student_id].append(report)
+    
+    # Group students by year and course for grouped view
+    grouped_students = []
+    years = students.values_list('year_of_study', flat=True).distinct().order_by('year_of_study')
+    
+    for year in years:
+        year_students = students.filter(year_of_study=year)
+        year_courses = []
+        
+        # Get distinct courses for this year
+        courses = Course.objects.filter(
+            id__in=year_students.values_list('course_id', flat=True).distinct()
+        )
+        
+        for course in courses:
+            course_students = year_students.filter(course=course)
+            year_courses.append({
+                'course': course,
+                'students': course_students,
+                'students_count': course_students.count()
+            })
+        
+        grouped_students.append({
+            'year': year,
+            'courses': year_courses,
+            'students_count': year_students.count()
+        })
+    
     context = {
         'students': students,
         'departments': departments,
         'placement_forms_by_student': placement_forms_by_student,
+        'student_reports_by_student': student_reports_by_student,
+        'grouped_students': grouped_students,
         'total_students': total_students,
         'assigned_count': assigned_count,
         'unassigned_count': unassigned_count,
         'assignment_rate': assignment_rate,
         'current_filter': assignment_filter,
         'selected_department': department_filter,
+        'selected_year': year_filter,
     }
     
     return render(request, 'attachments/admin_students.html', context)
@@ -1003,13 +1074,11 @@ def department_placements(request, department_id):
     
     context = {
         'department': department,
-        'students': students,  # Changed from 'placements' to 'students'
+        'students': students,
         'available_lecturers': available_lecturers,
     }
     
     return render(request, 'attachments/department_placements.html', context)
-
-
 
 @user_passes_test(is_admin)
 @require_POST
@@ -1046,7 +1115,7 @@ def assign_student_to_lecturer(request, student_id):
             assignment = StudentAssignment(
                 student=student,
                 lecturer=lecturer,
-                placement_form=placement_form,  # This can be None if no placement submitted
+                placement_form=placement_form,
                 academic_year=current_year
             )
             assignment.save()
@@ -1095,7 +1164,6 @@ def assign_student(request, student_id, lecturer_id):
     
     return redirect('attachments:department_placements', department_id=student.department.id)
 
-
 @user_passes_test(is_admin)
 @require_POST
 def unassign_student(request, assignment_id):
@@ -1106,8 +1174,6 @@ def unassign_student(request, assignment_id):
     
     messages.success(request, f'Assignment removed for {student_name}.')
     return redirect('attachments:admin_students')
-
-
 
 @user_passes_test(is_admin)
 @require_POST
@@ -1135,15 +1201,13 @@ def delete_lecturer(request, lecturer_id):
     
     return redirect('attachments:manage_lecturers')
 
-
-
 @user_passes_test(is_admin)
 def assignment_dashboard(request):
     """Dedicated page for assigning students to lecturers"""
     # Get all unassigned STUDENTS (not placements)
     unassigned_students = User.objects.filter(
         user_type=1,
-        student_assignments__isnull=True  # Students without assignments
+        student_assignments__isnull=True
     ).select_related('department', 'course').order_by('department__name', 'first_name')
     
     # Get all active lecturers with their available slots
@@ -1163,7 +1227,7 @@ def assignment_dashboard(request):
     # Group lecturers by department (only show those with available slots)
     lecturers_by_department = {}
     for lecturer in lecturers:
-        if lecturer.available_slots > 0:  # Only include lecturers with available slots
+        if lecturer.available_slots > 0:
             dept_name = lecturer.department.name
             if dept_name not in lecturers_by_department:
                 lecturers_by_department[dept_name] = []
@@ -1220,7 +1284,7 @@ def bulk_assign_students(request):
             StudentAssignment.objects.create(
                 student=student,
                 lecturer=lecturer,
-                placement_form=placement_form,  # This can be None if no placement submitted
+                placement_form=placement_form,
                 academic_year=current_year
             )
             assigned_count += 1
@@ -1236,7 +1300,6 @@ def bulk_assign_students(request):
     
     return redirect('attachments:assignment_dashboard')
 
-
 def get_departments(request):
     """API endpoint to get departments for a university"""
     university = request.GET.get('university', 'Machakos University')
@@ -1250,7 +1313,6 @@ def get_courses(request):
         courses = Course.objects.filter(department_id=department_id, is_active=True).values('id', 'name', 'code')
         return JsonResponse(list(courses), safe=False)
     return JsonResponse([], safe=False)
-
 
 @login_required
 @user_passes_test(is_admin)
@@ -1268,3 +1330,553 @@ def toggle_lecturer(request, lecturer_id):
         messages.error(request, 'Lecturer not found.')
     
     return redirect('attachments:manage_lecturers')
+
+@login_required
+def download_report(request, report_id):
+    """Download a report file"""
+    report = get_object_or_404(ReportUpload, id=report_id)
+    
+    # Check permissions - student can download their own reports, admin can download all
+    if request.user != report.attachment.student and not request.user.is_staff:
+        messages.error(request, "You don't have permission to download this report.")
+        return redirect('attachments:dashboard')
+    
+    response = HttpResponse(report.file, content_type='application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{report.file.name}"'
+    return response
+
+@user_passes_test(is_admin)
+def student_reports(request, student_id):
+    """Admin view of all reports for a specific student"""
+    student = get_object_or_404(User, id=student_id, user_type=1)
+    reports = ReportUpload.objects.filter(attachment__student=student).select_related('attachment')
+    
+    context = {
+        'student': student,
+        'reports': reports,
+    }
+    
+    return render(request, 'attachments/student_reports.html', context)
+
+@user_passes_test(is_admin)
+def pending_approvals(request):
+    """View all pending approvals"""
+    pending_placements = PlacementFormSubmission.objects.filter(status='pending').select_related(
+        'student', 'department'
+    )
+    pending_attachments = Attachment.objects.filter(status='pending').select_related('student')
+    
+    context = {
+        'pending_placements': pending_placements,
+        'pending_attachments': pending_attachments,
+        'pending_approvals_count': pending_placements.count() + pending_attachments.count(),
+    }
+    return render(request, 'attachments/pending_approvals.html', context)
+
+@user_passes_test(is_admin)
+def reports_dashboard(request):
+    """Comprehensive reports dashboard"""
+    # Get filter parameters
+    department_filter = request.GET.get('department', '')
+    date_filter = request.GET.get('date_range', 'all')
+    page = request.GET.get('page', 1)
+    
+    # Base queryset
+    reports = ReportUpload.objects.select_related(
+        'attachment', 'attachment__student', 'attachment__student__department'
+    ).order_by('-uploaded_at')
+    
+    # Apply filters
+    if department_filter:
+        reports = reports.filter(attachment__student__department_id=department_filter)
+    
+    if date_filter == 'week':
+        reports = reports.filter(uploaded_at__gte=timezone.now() - timedelta(days=7))
+    elif date_filter == 'month':
+        reports = reports.filter(uploaded_at__gte=timezone.now() - timedelta(days=30))
+    
+    # Pagination
+    paginator = Paginator(reports, 25)  # Show 25 reports per page
+    try:
+        reports_page = paginator.page(page)
+    except PageNotAnInteger:
+        reports_page = paginator.page(1)
+    except EmptyPage:
+        reports_page = paginator.page(paginator.num_pages)
+    
+    # Statistics
+    total_reports = ReportUpload.objects.count()
+    reports_this_week = ReportUpload.objects.filter(
+        uploaded_at__gte=timezone.now() - timedelta(days=7)
+    ).count()
+    reports_this_month = ReportUpload.objects.filter(
+        uploaded_at__gte=timezone.now() - timedelta(days=30)
+    ).count()
+    
+    departments = Department.objects.all()
+    
+    context = {
+        'reports': reports_page,
+        'total_reports': total_reports,
+        'reports_this_week': reports_this_week,
+        'reports_this_month': reports_this_month,
+        'departments': departments,
+        'selected_department': department_filter,
+        'selected_date_range': date_filter,
+    }
+    return render(request, 'attachments/reports_dashboard.html', context)
+
+@user_passes_test(is_admin)
+def workload_overview(request):
+    """Lecturer workload analysis"""
+    lecturers = Lecturer.objects.filter(is_active=True).annotate(
+        assigned_count=Count('assigned_students'),
+        available_slots=models.F('max_students') - Count('assigned_students'),
+        workload_percentage=(Count('assigned_students') * 100.0 / models.F('max_students'))
+    ).order_by('-workload_percentage')
+    
+    # Statistics
+    total_lecturers = lecturers.count()
+    overloaded_lecturers = lecturers.filter(workload_percentage__gt=100).count()
+    optimal_lecturers = lecturers.filter(workload_percentage__gte=70, workload_percentage__lte=100).count()
+    underutilized_lecturers = lecturers.filter(workload_percentage__lt=70).count()
+    
+    context = {
+        'lecturers': lecturers,
+        'total_lecturers': total_lecturers,
+        'overloaded_lecturers': overloaded_lecturers,
+        'optimal_lecturers': optimal_lecturers,
+        'underutilized_lecturers': underutilized_lecturers,
+    }
+    return render(request, 'attachments/workload_overview.html', context)
+
+@user_passes_test(is_admin)
+def export_data(request):
+    """Data export functionality"""
+    format_type = request.GET.get('format', 'excel')
+    data_type = request.GET.get('type', 'students')
+    
+    if data_type == 'students':
+        return export_students_data(request, format_type)
+    elif data_type == 'placements':
+        return export_placements_data(request, format_type)
+    elif data_type == 'reports':
+        return export_reports_data(request, format_type)
+    else:
+        messages.error(request, 'Invalid export type')
+        return redirect('attachments:admin_dashboard')
+
+def export_students_data(request, format_type):
+    """Export students data"""
+    students = User.objects.filter(user_type=1).select_related('department', 'course')
+    
+    if format_type == 'excel':
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="students_export.xlsx"'
+        
+        # Simple CSV export for now
+        writer = csv.writer(response)
+        writer.writerow(['Student ID', 'Full Name', 'Email', 'Department', 'Course', 'Year of Study', 'Registration Date'])
+        
+        for student in students:
+            writer.writerow([
+                student.student_id,
+                student.get_full_name(),
+                student.email,
+                student.department.name if student.department else '',
+                student.course.name if student.course else '',
+                student.year_of_study,
+                student.date_joined.strftime('%Y-%m-%d')
+            ])
+        
+        return response
+    
+    elif format_type == 'pdf':
+        # PDF export
+        html_string = render_to_string('attachments/export/students_pdf.html', {
+            'students': students,
+            'export_date': timezone.now()
+        })
+        
+        html = HTML(string=html_string)
+        pdf_file = html.write_pdf()
+        
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="students_export.pdf"'
+        return response
+    
+    else:
+        messages.error(request, 'Unsupported export format')
+        return redirect('attachments:admin_dashboard')
+
+def export_placements_data(request, format_type):
+    """Export placements data"""
+    placements = PlacementFormSubmission.objects.select_related('student', 'department')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="placements_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Student', 'Department', 'Firm', 'Supervisor', 'Start Date', 'End Date', 'Status'])
+    
+    for placement in placements:
+        writer.writerow([
+            placement.student.get_full_name(),
+            placement.department.name,
+            placement.firm_name,
+            placement.supervisor_name,
+            placement.start_date,
+            placement.end_date,
+            placement.status
+        ])
+    
+    return response
+
+def export_reports_data(request, format_type):
+    """Export reports data"""
+    reports = ReportUpload.objects.select_related('attachment', 'attachment__student')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="reports_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Student', 'Attachment', 'File Name', 'Uploaded At'])
+    
+    for report in reports:
+        writer.writerow([
+            report.attachment.student.get_full_name(),
+            report.attachment.organization,
+            report.file.name,
+            report.uploaded_at
+        ])
+    
+    return response
+
+def communication(request):
+    """Industrial Attachment Placement Form with enhanced view"""
+    # Get user's attachments (for sidebar)
+    attachments = Attachment.objects.filter(student=request.user)
+    current_attachment = attachments.first()
+    
+    # Check if user already submitted placement form for current cycle
+    current_year = timezone.now().year
+    existing_submission = PlacementFormSubmission.objects.filter(
+        student=request.user,
+        start_date__year=current_year
+    ).first()
+    
+    # Get all placement forms for admin view
+    all_placements = None
+    if request.user.is_staff or getattr(request.user, 'user_type', None) == 4:  # Admin
+        all_placements = PlacementFormSubmission.objects.select_related(
+            'student', 'department', 'student__course'
+        ).order_by('-submitted_at')
+    
+    if request.method == 'POST':
+        if existing_submission:
+            messages.error(request, 'You have already submitted the placement form for this attachment cycle.')
+            return redirect('attachments:communication')
+        
+        try:
+            # Create new placement form submission
+            submission = PlacementFormSubmission(
+                student=request.user,
+                registration_number=request.POST.get('registration_number'),
+                phone_number=request.POST.get('phone_number'),
+                course_name=request.POST.get('course_name'),
+                year_of_study=request.POST.get('year_of_study'),
+                firm_name=request.POST.get('firm_name'),
+                firm_email=request.POST.get('firm_email'),
+                town_city=request.POST.get('town_city'),
+                land_mark=request.POST.get('land_mark'),
+                supervisor_name=request.POST.get('supervisor_name'),
+                supervisor_phone=request.POST.get('supervisor_phone'),
+                supervisor_email=request.POST.get('supervisor_email'),
+                start_date=request.POST.get('start_date'),
+                end_date=request.POST.get('end_date'),
+                off_days=request.POST.getlist('off_days')
+            )
+            submission.save()
+            
+            messages.success(request, 'Industrial Attachment Placement Form submitted successfully!')
+            return redirect('attachments:communication')
+            
+        except Exception as e:
+            messages.error(request, f'Error submitting form: {str(e)}')
+    
+    context = {
+        'attachments': attachments,
+        'current_attachment': current_attachment,
+        'existing_submission': existing_submission,
+        'all_placements': all_placements,
+        'current_year': current_year,
+    }
+    
+    return render(request, 'attachments/communication.html', context)
+    
+    # Get counts for the template
+    total_students = User.objects.filter(user_type=1).count()
+    unassigned_students = User.objects.filter(user_type=1, student_assignments__isnull=True).count()
+    total_lecturers = Lecturer.objects.filter(is_active=True).count()
+    
+    context = {
+        'total_students': total_students,
+        'unassigned_students': unassigned_students,
+        'total_lecturers': total_lecturers,
+    }
+    return render(request, 'attachments/communication_center.html', context)
+
+@user_passes_test(is_admin)
+def student_registration(request):
+    """Manual student registration by admin"""
+    departments = Department.objects.all()
+    
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        student_id = request.POST.get('student_id', '').strip()
+        year_of_study = request.POST.get('year_of_study')
+        department_id = request.POST.get('department')
+        course_id = request.POST.get('course')
+        
+        # Basic validation
+        if not all([first_name, last_name, email, student_id, year_of_study, department_id, course_id]):
+            messages.error(request, 'Please fill in all required fields.')
+            return redirect('attachments:student_registration')
+        
+        try:
+            # Check if email already exists
+            if User.objects.filter(email=email).exists():
+                messages.error(request, 'A user with this email already exists.')
+                return redirect('attachments:student_registration')
+            
+            # Check if student ID already exists
+            if User.objects.filter(student_id=student_id).exists():
+                messages.error(request, 'A student with this ID already exists.')
+                return redirect('attachments:student_registration')
+            
+            # Generate secure random password
+            password = generate_secure_password()
+            
+            # Create user
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                user_type=1,  # Student type
+                student_id=student_id,
+                year_of_study=year_of_study,
+                department_id=department_id,
+                course_id=course_id
+            )
+            
+            messages.success(request, 
+                f'Student {first_name} {last_name} created successfully! '
+                f'Login credentials:<br>'
+                f'Student ID: <strong>{student_id}</strong><br>'
+                f'Password: <strong>{password}</strong>'
+            )
+            
+            return redirect('attachments:student_registration')
+                
+        except Exception as e:
+            messages.error(request, f'Error creating student: {str(e)}')
+    
+    context = {
+        'departments': departments,
+    }
+    
+    return render(request, 'attachments/student_registration.html', context)
+
+@user_passes_test(is_admin)
+def auto_assign_students(request):
+    """Automatically assign unassigned students to available lecturers"""
+    try:
+        # Get all unassigned students for current academic year
+        current_year = timezone.now().year
+        unassigned_students = User.objects.filter(
+            user_type=1,
+            student_assignments__isnull=True
+        ).select_related('department', 'course')
+        
+        # Get all active lecturers with available slots, ordered by current workload
+        available_lecturers = Lecturer.objects.filter(
+            is_active=True
+        ).annotate(
+            assigned_count=Count('assigned_students'),
+            available_slots=models.F('max_students') - Count('assigned_students')
+        ).filter(available_slots__gt=0).select_related('user', 'department')
+        
+        assignments_made = 0
+        errors = []
+        
+        # Group students by department for efficient assignment
+        students_by_department = {}
+        for student in unassigned_students:
+            dept_id = student.department.id if student.department else 0
+            if dept_id not in students_by_department:
+                students_by_department[dept_id] = []
+            students_by_department[dept_id].append(student)
+        
+        # Group lecturers by department
+        lecturers_by_department = {}
+        for lecturer in available_lecturers:
+            dept_id = lecturer.department.id
+            if dept_id not in lecturers_by_department:
+                lecturers_by_department[dept_id] = []
+            lecturers_by_department[dept_id].append(lecturer)
+        
+        # Assign students department-wise
+        for dept_id, students in students_by_department.items():
+            if dept_id in lecturers_by_department and lecturers_by_department[dept_id]:
+                lecturers = lecturers_by_department[dept_id]
+                
+                # Sort lecturers by current workload (least assigned first)
+                lecturers_sorted = sorted(lecturers, key=lambda x: x.assigned_count)
+                
+                # Round-robin assignment to distribute students evenly
+                for i, student in enumerate(students):
+                    lecturer = lecturers_sorted[i % len(lecturers_sorted)]
+                    
+                    # Check if lecturer still has available slots
+                    if lecturer.assigned_count < lecturer.max_students:
+                        try:
+                            # Get student's placement form if exists
+                            placement_form = PlacementFormSubmission.objects.filter(
+                                student=student
+                            ).first()
+                            
+                            # Create assignment
+                            assignment = StudentAssignment(
+                                student=student,
+                                lecturer=lecturer,
+                                placement_form=placement_form,
+                                academic_year=current_year
+                            )
+                            assignment.save()
+                            
+                            # Update lecturer's assigned count
+                            lecturer.assigned_count += 1
+                            assignments_made += 1
+                            
+                        except Exception as e:
+                            errors.append(f"Failed to assign {student.get_full_name()}: {str(e)}")
+                    else:
+                        errors.append(f"Lecturer {lecturer.user.get_full_name()} has no available slots for {student.get_full_name()}")
+            else:
+                # No lecturers in this department, try to find any available lecturer
+                if available_lecturers:
+                    lecturers_sorted = sorted(available_lecturers, key=lambda x: x.assigned_count)
+                    for student in students:
+                        assigned = False
+                        for lecturer in lecturers_sorted:
+                            if lecturer.assigned_count < lecturer.max_students:
+                                try:
+                                    placement_form = PlacementFormSubmission.objects.filter(
+                                        student=student
+                                    ).first()
+                                    
+                                    assignment = StudentAssignment(
+                                        student=student,
+                                        lecturer=lecturer,
+                                        placement_form=placement_form,
+                                        academic_year=current_year
+                                    )
+                                    assignment.save()
+                                    
+                                    lecturer.assigned_count += 1
+                                    assignments_made += 1
+                                    assigned = True
+                                    break
+                                    
+                                except Exception as e:
+                                    errors.append(f"Failed to assign {student.get_full_name()}: {str(e)}")
+                        
+                        if not assigned:
+                            errors.append(f"No available lecturer for {student.get_full_name()} (Department: {student.department.name if student.department else 'None'})")
+        
+        if assignments_made > 0:
+            messages.success(request, f'Successfully auto-assigned {assignments_made} students to lecturers!')
+        
+        if errors:
+            messages.warning(request, f'Some assignments failed: {", ".join(errors[:5])}' + ("..." if len(errors) > 5 else ""))
+        
+        if assignments_made == 0 and not errors:
+            messages.info(request, 'No students available for auto-assignment or no lecturers with available slots.')
+            
+    except Exception as e:
+        messages.error(request, f'Error during auto-assignment: {str(e)}')
+    
+    return redirect('attachments:assignment_dashboard')
+
+@user_passes_test(is_admin)
+def smart_assign_department(request, department_id):
+    """Smart assignment for a specific department"""
+    try:
+        department = get_object_or_404(Department, id=department_id)
+        current_year = timezone.now().year
+        
+        # Get unassigned students in this department
+        unassigned_students = User.objects.filter(
+            user_type=1,
+            department=department,
+            student_assignments__isnull=True
+        ).select_related('course')
+        
+        # Get available lecturers in this department
+        available_lecturers = Lecturer.objects.filter(
+            department=department,
+            is_active=True
+        ).annotate(
+            assigned_count=Count('assigned_students'),
+            available_slots=models.F('max_students') - Count('assigned_students')
+        ).filter(available_slots__gt=0).select_related('user')
+        
+        if not available_lecturers:
+            messages.error(request, f'No available lecturers in {department.name} department.')
+            return redirect('attachments:department_placements', department_id=department_id)
+        
+        if not unassigned_students:
+            messages.info(request, f'No unassigned students in {department.name} department.')
+            return redirect('attachments:department_placements', department_id=department_id)
+        
+        assignments_made = 0
+        
+        # Sort lecturers by workload (least assigned first)
+        lecturers_sorted = sorted(available_lecturers, key=lambda x: x.assigned_count)
+        
+        # Round-robin assignment
+        for i, student in enumerate(unassigned_students):
+            lecturer = lecturers_sorted[i % len(lecturers_sorted)]
+            
+            if lecturer.assigned_count < lecturer.max_students:
+                try:
+                    placement_form = PlacementFormSubmission.objects.filter(
+                        student=student
+                    ).first()
+                    
+                    assignment = StudentAssignment(
+                        student=student,
+                        lecturer=lecturer,
+                        placement_form=placement_form,
+                        academic_year=current_year
+                    )
+                    assignment.save()
+                    
+                    lecturer.assigned_count += 1
+                    assignments_made += 1
+                    
+                except Exception as e:
+                    messages.error(request, f"Failed to assign {student.get_full_name()}: {str(e)}")
+        
+        if assignments_made > 0:
+            messages.success(request, f'Successfully assigned {assignments_made} students in {department.name} department!')
+        else:
+            messages.info(request, f'No assignments made in {department.name} department.')
+            
+    except Exception as e:
+        messages.error(request, f'Error during department assignment: {str(e)}')
+    
+    return redirect('attachments:department_placements', department_id=department_id)
