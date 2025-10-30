@@ -8,7 +8,7 @@
 <style>
 /* Reuse the same styles from student logbook with supervisor-specific tweaks */
 .logbook-header {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     border-radius: 12px;
     color: white;
     padding: 20px;
@@ -31,7 +31,7 @@
 .stat-number {
     font-size: 2rem;
     font-weight: bold;
-    color: #4facfe;
+    color: #3498db;
     margin-bottom: 5px;
 }
 .stat-label {
@@ -51,23 +51,27 @@
     padding-bottom: 15px;
     margin-bottom: 20px;
 }
+.section-header h4 {
+    color: #3498db;
+    font-weight: 600;
+}
 .student-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
 }
 .badge-reviewed {
-    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
 }
 .badge-pending {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
     color: white;
 }
 .btn-action {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     border: none;
     border-radius: 8px;
     color: white;
@@ -85,6 +89,7 @@
 .entry-table th {
     background: #f8f9fa;
     font-weight: 600;
+    color: #3498db;
 }
 .entry-table tr:hover {
     background: #f8f9fa;
@@ -95,6 +100,66 @@
     border-radius: 8px;
     margin-top: 10px;
 }
+
+/* Sidebar Styles */
+.sidebar {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 8px;
+    margin: 2px 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    transform: translateX(5px);
+}
+
+.sidebar .nav-link.active {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%) !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .sidebar .nav-link {
+        margin: 1px 4px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+    }
+}
 </style>
 {% endblock %}
 
@@ -102,7 +167,7 @@
 <div class="container-fluid py-4">
     <div class="row">
         <!-- Supervisor Sidebar -->
-        <div class="col-lg-2 col-md-3 d-md-block sidebar collapse bg-dark text-white">
+        <div class="col-lg-2 col-md-3 d-md-block sidebar collapse text-white">
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
@@ -218,13 +283,13 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-outline-info view-entry" 
+                                                    <button type="button" class="btn btn-sm btn-outline-primary view-entry" 
                                                             data-bs-toggle="modal" data-bs-target="#entryModal" 
                                                             data-entry-id="{{ entry.id }}">
                                                         <i class="fas fa-eye"></i> View Details
                                                     </button>
                                                     {% if not entry.supervisor_comments %}
-                                                    <button type="button" class="btn btn-sm btn-outline-success add-comment" 
+                                                    <button type="button" class="btn btn-sm btn-outline-success add-comment mt-1" 
                                                             data-entry-id="{{ entry.id }}">
                                                         <i class="fas fa-comment"></i> Add Comment
                                                     </button>
@@ -324,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="mb-3"><strong>Skills Learned:</strong><p class="p-2 bg-light rounded">${data.skills_learned || "-"}</p></div>
                         ${data.achievements ? `<div class="mb-3"><strong>Achievements:</strong><p class="p-2 bg-light rounded">${data.achievements}</p></div>` : ''}
                         ${data.challenges ? `<div class="mb-3"><strong>Challenges:</strong><p class="p-2 bg-light rounded">${data.challenges}</p></div>` : ''}
-                        ${data.supervisor_comments ? `<div class="mb-3"><strong>Your Comments:</strong><p class="p-2 bg-info text-white rounded">${data.supervisor_comments}</p></div>` : 
+                        ${data.supervisor_comments ? `<div class="mb-3"><strong>Your Comments:</strong><p class="p-2 bg-primary text-white rounded">${data.supervisor_comments}</p></div>` : 
                           `<div class="mb-3">
                               <strong>Add Comment:</strong>
                               <form class="comment-form" id="commentForm-${entryId}">

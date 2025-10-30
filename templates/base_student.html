@@ -4,18 +4,20 @@
 {% block extra_css %}
 <style>
 .role-header {
-    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
     color: white;
-    padding: 10px 0;
+    padding: 12px 0;
     margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .role-badge {
-    background-color: #f72585;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
     color: white;
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 /* 🔔 Alerts Styling */
@@ -35,6 +37,27 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: slideIn 0.4s ease-out;
     font-size: 0.9rem;
+    border: none;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
 }
 
 @keyframes slideIn {
@@ -70,16 +93,16 @@
     {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {% if message.tags == 'error' %}
-                <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+                <i class="fas fa-exclamation-circle me-2"></i>
             {% elif message.tags == 'success' %}
-                <i class="fas fa-check-circle me-2 text-success"></i>
+                <i class="fas fa-check-circle me-2"></i>
             {% elif message.tags == 'warning' %}
-                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                <i class="fas fa-exclamation-triangle me-2"></i>
             {% else %}
-                <i class="fas fa-info-circle me-2 text-info"></i>
+                <i class="fas fa-info-circle me-2"></i>
             {% endif %}
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     {% endfor %}
 </div>

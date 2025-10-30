@@ -1,0 +1,418 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Lecturer Workload Overview - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">Lecturer Workload Overview</h1>
+            <p class="text-muted mb-0">Monitor and manage lecturer assignments and capacity</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'attachments:admin_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Workload Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Lecturers
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ total_lecturers }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chalkboard-teacher fa-2x text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Optimal Load
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ optimal_lecturers }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Overloaded
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ overloaded_lecturers }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Underutilized
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ underutilized_lecturers }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-clock fa-2x text-info opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workload Distribution Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <h5 class="m-0 font-weight-bold text-primary mb-3">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Workload Distribution
+                </h5>
+                <div class="row">
+                    <div class="col-md-8">
+                        <canvas id="workloadChart" height="200"></canvas>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="workload-legend">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="workload-indicator bg-success me-2"></div>
+                                <div>
+                                    <strong>Optimal (70-100%)</strong>
+                                    <div class="text-muted">{{ optimal_lecturers }} lecturers</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="workload-indicator bg-warning me-2"></div>
+                                <div>
+                                    <strong>Overloaded (>100%)</strong>
+                                    <div class="text-muted">{{ overloaded_lecturers }} lecturers</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="workload-indicator bg-info me-2"></div>
+                                <div>
+                                    <strong>Underutilized (<70%)</strong>
+                                    <div class="text-muted">{{ underutilized_lecturers }} lecturers</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lecturers Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list me-2"></i>
+                        Lecturer Workload Details
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportWorkloadData()">
+                            <i class="fas fa-download me-1"></i> Export Data
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover" id="workloadTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Lecturer</th>
+                                <th>Department</th>
+                                <th>Staff ID</th>
+                                <th>Assigned Students</th>
+                                <th>Max Capacity</th>
+                                <th>Available Slots</th>
+                                <th>Workload %</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lecturer in lecturers %}
+                            <tr>
+                                <td>
+                                    <strong>{{ lecturer.user.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ lecturer.user.email }}</small>
+                                </td>
+                                <td>{{ lecturer.department.name }}</td>
+                                <td>{{ lecturer.staff_id }}</td>
+                                <td>
+                                    <span class="h5 mb-0 font-weight-bold {% if lecturer.assigned_count >= lecturer.max_students %}text-danger{% else %}text-primary{% endif %}">
+                                        {{ lecturer.assigned_count }}
+                                    </span>
+                                </td>
+                                <td>{{ lecturer.max_students }}</td>
+                                <td>
+                                    <span class="badge {% if lecturer.available_slots > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ lecturer.available_slots }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                            <div class="progress-bar 
+                                                {% if lecturer.workload_percentage > 100 %}bg-danger
+                                                {% elif lecturer.workload_percentage >= 70 %}bg-success
+                                                {% else %}bg-info{% endif %}" 
+                                                style="width: {% if lecturer.workload_percentage > 100 %}100{% else %}{{ lecturer.workload_percentage }}{% endif %}%">
+                                            </div>
+                                        </div>
+                                        <small class="text-nowrap">{{ lecturer.workload_percentage|floatformat:0 }}%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if lecturer.workload_percentage > 100 %}
+                                    <span class="badge bg-danger">Overloaded</span>
+                                    {% elif lecturer.workload_percentage >= 70 %}
+                                    <span class="badge bg-success">Optimal</span>
+                                    {% else %}
+                                    <span class="badge bg-info">Underutilized</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'attachments:manage_lecturers' %}" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Manage Lecturer">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="viewLecturerStudents({{ lecturer.id }})"
+                                                title="View Assigned Students">
+                                            <i class="fas fa-users"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <i class="fas fa-chalkboard-teacher fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Lecturers Found</h5>
+                                    <p class="text-muted">No lecturers have been added to the system yet.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <h5 class="m-0 font-weight-bold text-primary mb-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Workload Recommendations
+                </h5>
+                <div class="row">
+                    {% if overloaded_lecturers > 0 %}
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Overloaded Lecturers</h6>
+                            <p class="mb-1">You have {{ overloaded_lecturers }} lecturer(s) exceeding their capacity.</p>
+                            <small>Consider redistributing students or increasing capacity limits.</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if underutilized_lecturers > 0 %}
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-user-clock me-2"></i>Underutilized Lecturers</h6>
+                            <p class="mb-1">You have {{ underutilized_lecturers }} lecturer(s) with available capacity.</p>
+                            <small>Consider assigning more students to balance the workload.</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if optimal_lecturers == total_lecturers and total_lecturers > 0 %}
+                    <div class="col-12">
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check-circle me-2"></i>Optimal Workload Distribution</h6>
+                            <p class="mb-0">All lecturers are within their optimal workload range. Great job!</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lecturer Students Modal -->
+<div class="modal fade" id="lecturerStudentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assigned Students</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="lecturerStudentsContent">
+                <!-- Content will be loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportWorkloadData() {
+    window.location.href = '{% url "attachments:export_data" %}?type=workload&format=csv';
+}
+
+function viewLecturerStudents(lecturerId) {
+    const modal = new bootstrap.Modal(document.getElementById('lecturerStudentsModal'));
+    
+    // Simple implementation - you can enhance this with AJAX later
+    document.getElementById('lecturerStudentsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+            <p>Student list for this lecturer will be displayed here.</p>
+            <p><small class="text-muted">To implement detailed view, add AJAX functionality to fetch assigned students.</small></p>
+        </div>
+    `;
+    
+    modal.show();
+}
+
+// Initialize DataTable if available
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#workloadTable').DataTable({
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            responsive: true,
+            order: [[6, 'desc']], // Sort by workload percentage descending
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+        });
+    }
+
+    // Initialize workload chart
+    const ctx = document.getElementById('workloadChart').getContext('2d');
+    const workloadChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Optimal (70-100%)', 'Overloaded (>100%)', 'Underutilized (<70%)'],
+            datasets: [{
+                data: [{{ optimal_lecturers }}, {{ overloaded_lecturers }}, {{ underutilized_lecturers }}],
+                backgroundColor: ['#28a745', '#ffc107', '#17a2b8'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = {{ total_lecturers }};
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} lecturers (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+    border: none;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.border-left-primary { border-left: 4px solid #007bff !important; }
+.border-left-success { border-left: 4px solid #28a745 !important; }
+.border-left-warning { border-left: 4px solid #ffc107 !important; }
+.border-left-info { border-left: 4px solid #17a2b8 !important; }
+
+.workload-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.workload-legend {
+    padding: 20px 0;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress {
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    border-radius: 4px;
+}
+
+.btn-group .btn {
+    border-radius: 6px;
+    margin: 0 2px;
+}
+</style>
+{% endblock %}

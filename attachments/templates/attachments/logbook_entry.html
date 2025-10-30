@@ -9,34 +9,38 @@
 {% block extra_css %}
 <style>
 .entry-form-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    border-radius: 12px;
     color: white;
+    padding: 20px;
+    margin-bottom: 25px;
 }
 .form-card {
     border: none;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    background: white;
 }
 .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 }
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     border: none;
     border-radius: 8px;
 }
 .btn-primary:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    background: linear-gradient(135deg, #2980b9 0%, #2573a7 100%);
     transform: translateY(-2px);
 }
 .attachment-info {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    border-radius: 10px;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    border-radius: 12px;
     color: white;
-    padding: 15px;
-    margin-bottom: 20px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: none;
 }
 .preview-list {
     background: #f8f9fa;
@@ -46,6 +50,19 @@
 }
 .preview-list ol {
     margin-bottom: 0;
+}
+
+.btn-light {
+    background: white;
+    border: 1px solid #bdc3c7;
+    border-radius: 8px;
+    color: #2c3e50;
+}
+
+.btn-light:hover {
+    background: #ecf0f1;
+    border-color: #95a5a6;
+    transform: translateY(-1px);
 }
 </style>
 {% endblock %}
@@ -60,7 +77,7 @@
         <main class="col-lg-10 col-md-9 ms-sm-auto px-md-4">
             
             <!-- Header -->
-            <div class="entry-form-container p-4 mb-4">
+            <div class="entry-form-container">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="mb-1">
@@ -253,7 +270,7 @@
   <div id="entryToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="d-flex">
       <div class="toast-body">
-        ⚠️ You already submitted today’s entry ({{ today }}). Please come back tomorrow.
+        ⚠️ You already submitted today's entry ({{ today }}). Please come back tomorrow.
       </div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>

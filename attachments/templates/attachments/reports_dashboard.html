@@ -1,0 +1,417 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Student Reports Dashboard - PractiCheck{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">Student Reports Dashboard</h1>
+            <p class="text-muted mb-0">View and manage all student reports</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'attachments:admin_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Reports
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ total_reports }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-file-alt fa-2x text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            This Week
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ reports_this_week }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-week fa-2x text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            This Month
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ reports_this_month }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-alt fa-2x text-info opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="metric-card border-left-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Departments
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ departments|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-building fa-2x text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Filter by Department</label>
+                        <select class="form-select" id="departmentFilter" onchange="filterReports()">
+                            <option value="">All Departments</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"i" %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" id="dateRangeFilter" onchange="filterReports()">
+                            <option value="all" {% if selected_date_range == 'all' %}selected{% endif %}>All Time</option>
+                            <option value="week" {% if selected_date_range == 'week' %}selected{% endif %}>Last 7 Days</option>
+                            <option value="month" {% if selected_date_range == 'month' %}selected{% endif %}>Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-alt me-2"></i>
+                        All Student Reports
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportReports('csv')">
+                            <i class="fas fa-download me-1"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover" id="reportsTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Department</th>
+                                <th>Year of Study</th>
+                                <th>Attachment</th>
+                                <th>File Name</th>
+                                <th>Upload Date</th>
+                                <th>File Size</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>
+                                    <strong>{{ report.attachment.student.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ report.attachment.student.email }}</small>
+                                </td>
+                                <td>
+                                    {% if report.attachment.student.department %}
+                                        {{ report.attachment.student.department.name }}
+                                    {% else %}
+                                        <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if report.attachment.student.year_of_study %}
+                                        {{ report.attachment.student.year_of_study }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ report.attachment.organization }}</td>
+                                <td>
+                                    <i class="fas fa-file-pdf text-danger me-1"></i>
+                                    {{ report.file.name|slice:"8:" }}
+                                </td>
+                                <td>
+                                    <small>{{ report.uploaded_at|date:"M d, Y" }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ report.uploaded_at|time }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ report.file.size|filesizeformat }}</small>
+                                </td>
+                                <td>
+                                    {% if report.attachment.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                    {% elif report.attachment.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ report.attachment.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'attachments:download_report' report.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Download Report">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="viewReportDetails({{ report.id }})"
+                                                title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <a href="{% url 'attachments:student_reports' report.attachment.student.id %}" 
+                                           class="btn btn-sm btn-outline-secondary"
+                                           title="All Student Reports">
+                                            <i class="fas fa-list"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Reports Found</h5>
+                                    <p class="text-muted">No student reports have been uploaded yet.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if reports.has_other_pages %}
+                <nav aria-label="Reports pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if reports.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reports.previous_page_number }}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_date_range %}&date_range={{ selected_date_range }}{% endif %}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in reports.paginator.page_range %}
+                            {% if reports.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_date_range %}&date_range={{ selected_date_range }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if reports.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reports.next_page_number }}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_date_range %}&date_range={{ selected_date_range }}{% endif %}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Department Summary -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <h5 class="m-0 font-weight-bold text-primary mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Departments Overview
+                </h5>
+                <div class="row">
+                    {% for dept in departments %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">{{ dept.name }}</h6>
+                                <div class="h4 text-primary mb-1">
+                                    <!-- This will show department name only - counts would need backend calculation -->
+                                    -
+                                </div>
+                                <small class="text-muted">View Department</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center">
+                        <p class="text-muted">No departments found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Details Modal -->
+<div class="modal fade" id="reportDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reportDetailsContent">
+                <!-- Content will be loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadReportBtn">
+                    <i class="fas fa-download me-1"></i> Download Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterReports() {
+    const department = document.getElementById('departmentFilter').value;
+    const dateRange = document.getElementById('dateRangeFilter').value;
+    
+    let url = '{% url "attachments:reports_dashboard" %}?';
+    
+    if (department) {
+        url += `department=${department}&`;
+    }
+    
+    if (dateRange && dateRange !== 'all') {
+        url += `date_range=${dateRange}&`;
+    }
+    
+    window.location.href = url;
+}
+
+function exportReports(format) {
+    let url = '{% url "attachments:export_data" %}?type=reports&format=' + format;
+    
+    // Add current filters to export URL
+    const department = document.getElementById('departmentFilter').value;
+    const dateRange = document.getElementById('dateRangeFilter').value;
+    
+    if (department) {
+        url += `&department=${department}`;
+    }
+    
+    if (dateRange && dateRange !== 'all') {
+        url += `&date_range=${dateRange}`;
+    }
+    
+    window.location.href = url;
+}
+
+function viewReportDetails(reportId) {
+    const modal = new bootstrap.Modal(document.getElementById('reportDetailsModal'));
+    
+    // Simple implementation - you can enhance this with AJAX later
+    document.getElementById('reportDetailsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+            <p>Report details will be displayed here.</p>
+            <p><small class="text-muted">To implement detailed view, add AJAX functionality to fetch report details.</small></p>
+        </div>
+    `;
+    
+    // Set download button URL
+    document.getElementById('downloadReportBtn').onclick = function() {
+        window.location.href = '/attachments/reports/download/' + reportId + '/';
+    };
+    
+    modal.show();
+}
+
+// Initialize DataTable if available
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#reportsTable').DataTable({
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            responsive: true,
+            order: [[5, 'desc']], // Sort by upload date descending
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+        });
+    }
+});
+</script>
+
+<style>
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+    border: none;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.border-left-primary { border-left: 4px solid #007bff !important; }
+.border-left-success { border-left: 4px solid #28a745 !important; }
+.border-left-info { border-left: 4px solid #17a2b8 !important; }
+.border-left-warning { border-left: 4px solid #ffc107 !important; }
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-group .btn {
+    border-radius: 6px;
+    margin: 0 2px;
+}
+</style>
+{% endblock %}

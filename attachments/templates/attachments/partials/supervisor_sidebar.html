@@ -1,34 +1,116 @@
 <!-- templates/attachments/partials/supervisor_sidebar.html -->
-<nav class="col-lg-2 col-md-3 d-md-block bg-light sidebar collapse">
+<nav class="col-lg-2 col-md-3 d-md-block sidebar collapse bg-primary text-white">
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
-
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}"
+                <a class="nav-link text-white {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active bg-gradient{% endif %}"
                    href="{% url 'evaluations:supervisor_dashboard' %}">
                     <i class="fas fa-home me-2"></i> Dashboard
                 </a>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link"
+                <a class="nav-link text-white"
                    href="{% url 'evaluations:supervisor_dashboard' %}#logbooks">
                     <i class="fas fa-book me-2"></i> Student Logbooks
                 </a>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link"
+                <a class="nav-link text-white"
                    href="{% url 'evaluations:supervisor_dashboard' %}#evaluations">
                     <i class="fas fa-clipboard-check me-2"></i> Evaluations
                 </a>
             </li>
 
-            <li class="nav-item mt-3">
-                <a class="nav-link text-danger" href="{% url 'accounts:logout' %}">
+            <li class="nav-item mt-4 pt-3 border-top border-light border-opacity-25">
+                <a class="nav-link text-light bg-danger bg-opacity-20 border-start border-danger border-3" 
+                   href="{% url 'accounts:logout' %}">
                     <i class="fas fa-sign-out-alt me-2"></i> Logout
                 </a>
             </li>
         </ul>
     </div>
 </nav>
+
+<style>
+.sidebar {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    min-height: 100vh;
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 8px;
+    margin: 2px 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.sidebar .nav-link:hover:not(.bg-danger) {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    transform: translateX(5px);
+}
+
+.sidebar .nav-link.active,
+.sidebar .nav-link.bg-gradient {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%) !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.sidebar .nav-link.bg-danger {
+    background: rgba(220, 53, 69, 0.15) !important;
+    color: #f8d7da !important;
+    border-left: 3px solid #dc3545 !important;
+    margin-top: 1rem;
+}
+
+.sidebar .nav-link.bg-danger:hover {
+    background: rgba(220, 53, 69, 0.25) !important;
+    color: #fff !important;
+    transform: translateX(5px);
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar .border-top {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .sidebar .nav-link {
+        margin: 1px 4px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Smooth transitions for all interactive elements */
+.sidebar .nav-link,
+.sidebar .nav-link i {
+    transition: all 0.3s ease;
+}
+</style>

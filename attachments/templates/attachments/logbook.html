@@ -8,7 +8,7 @@
 <style>
 /* Header */
 .logbook-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
     border-radius: 12px;
     color: white;
     padding: 20px;
@@ -25,17 +25,17 @@
     border-radius: 12px;
     padding: 20px;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: none;
 }
 .stat-number {
     font-size: 2rem;
     font-weight: bold;
-    color: #667eea;
+    color: #3498db;
     margin-bottom: 5px;
 }
 .stat-label {
-    color: #6c757d;
+    color: #7f8c8d;
     font-size: 0.9rem;
 }
 .section-card {
@@ -43,46 +43,47 @@
     border-radius: 12px;
     padding: 25px;
     margin-bottom: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: none;
 }
 .section-header {
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid #ecf0f1;
     padding-bottom: 15px;
     margin-bottom: 20px;
 }
 .supervisor-card {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
+    border: none;
 }
 .progress-card, .quick-actions {
     background: white;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: none;
 }
 .badge-reviewed {
-    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
     color: white;
 }
 .badge-pending {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
     color: white;
 }
 .btn-action {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     border: none;
     border-radius: 8px;
     color: white;
     padding: 10px 20px;
 }
 .btn-action:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    background: linear-gradient(135deg, #2980b9 0%, #2573a7 100%);
     transform: translateY(-2px);
     color: white;
 }
@@ -93,7 +94,7 @@
 .entry-table th, .entry-table td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #ecf0f1;
 }
 .entry-table th {
     background: #f8f9fa;
@@ -108,11 +109,45 @@
 }
 .report-list li {
     padding: 10px 0;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #ecf0f1;
 }
 .report-list li:last-child {
     border-bottom: none;
 }
+
+.btn-primary {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    border: none;
+    border-radius: 8px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #2573a7 100%);
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    border-color: #3498db;
+    color: #3498db;
+    border-radius: 8px;
+}
+
+.btn-outline-primary:hover {
+    background: #3498db;
+    border-color: #3498db;
+    transform: translateY(-1px);
+}
+
+.progress {
+    background-color: #ecf0f1;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    border-radius: 4px;
+}
+
 /* Responsive tweaks */
 @media (max-width: 991px) {
     .logbook-header .btn-group {
