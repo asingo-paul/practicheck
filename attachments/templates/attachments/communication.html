@@ -215,7 +215,7 @@
                     <ul class="mb-0">
                         <li>Enter the required details in the spaces provided</li>
                         <li>Submit the duly filled form by the end of September 2025</li>
-                        <li>Do not fill this form more than <strong>ONCE</strong> for each attachment cycle</li>
+                        <li>You can update your details at any time</li>
                         <li>Failure to comply implies you will not be considered for assessment</li>
                     </ul>
                 </p>
@@ -232,25 +232,29 @@
             </div>
             {% endif %}
 
-            <!-- Student Placement Form (Only for non-admin users) -->
+            <!-- Student Placement Form (Always available for updates) -->
             {% if not user.is_staff and user.user_type != 4 %}
             <div class="card shadow">
                 <div class="card-header bg-primary text-white py-3">
                     <h5 class="m-0">
                         <i class="fas fa-file-alt me-2"></i>
                         Industrial Attachment Placement Form - September - December 2025
+                        {% if existing_submission %}
+                        <span class="badge bg-warning ms-2">Update Existing</span>
+                        {% endif %}
                     </h5>
                 </div>
                 <div class="card-body">
                     {% if existing_submission %}
-                    <div class="alert alert-warning">
-                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Form Already Submitted</h6>
-                        <p class="mb-0">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Existing Submission Found</h6>
+                        <p class="mb-2">
                             You have already submitted the Industrial Attachment Placement Form for September - December 2025 cycle.
                             Your submission was made on {{ existing_submission.submitted_at|date:"F d, Y" }}.
+                            You can update your details below.
                         </p>
                         <div class="mt-2">
-                            <strong>Your Submission Details:</strong><br>
+                            <strong>Current Submission Details:</strong><br>
                             <strong>Firm:</strong> {{ existing_submission.firm_name }}<br>
                             <strong>Supervisor:</strong> {{ existing_submission.supervisor_name }}<br>
                             <strong>Period:</strong> {{ existing_submission.start_date|date:"M d, Y" }} - {{ existing_submission.end_date|date:"M d, Y" }}<br>
@@ -260,7 +264,8 @@
                             </span>
                         </div>
                     </div>
-                    {% else %}
+                    {% endif %}
+
                     <form method="post" id="placementForm">
                         {% csrf_token %}
                         
@@ -280,14 +285,16 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="registration_number" class="form-label">Registration Number *</label>
                                     <input type="text" class="form-control" id="registration_number" name="registration_number" 
-                                           placeholder="e.g., ABC123/12345" required>
+                                           placeholder="e.g., ABC123/12345" required
+                                           value="{{ existing_submission.registration_number|default:'' }}">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="phone_number" class="form-label">Phone Number *</label>
                                     <input type="tel" class="form-control" id="phone_number" name="phone_number" 
-                                           placeholder="e.g., 0712345678" required>
+                                           placeholder="e.g., 0712345678" required
+                                           value="{{ existing_submission.phone_number|default:'' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="email" class="form-label">Email Address *</label>
@@ -308,17 +315,18 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="course_name" class="form-label">Course Name *</label>
                                     <input type="text" class="form-control" id="course_name" name="course_name" 
-                                           placeholder="e.g., Bachelor of Science in Computer Science" required>
+                                           placeholder="e.g., Bachelor of Science in Computer Science" required
+                                           value="{{ existing_submission.course_name|default:'' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="year_of_study" class="form-label">Year of Study *</label>
                                     <select class="form-select" id="year_of_study" name="year_of_study" required>
                                         <option value="">Select Year of Study</option>
-                                        <option value="Year 1">Year 1</option>
-                                        <option value="Year 2">Year 2</option>
-                                        <option value="Year 3">Year 3</option>
-                                        <option value="Year 4">Year 4</option>
-                                        <option value="Year 5">Year 5</option>
+                                        <option value="Year 1" {% if existing_submission.year_of_study == "Year 1" %}selected{% endif %}>Year 1</option>
+                                        <option value="Year 2" {% if existing_submission.year_of_study == "Year 2" %}selected{% endif %}>Year 2</option>
+                                        <option value="Year 3" {% if existing_submission.year_of_study == "Year 3" %}selected{% endif %}>Year 3</option>
+                                        <option value="Year 4" {% if existing_submission.year_of_study == "Year 4" %}selected{% endif %}>Year 4</option>
+                                        <option value="Year 5" {% if existing_submission.year_of_study == "Year 5" %}selected{% endif %}>Year 5</option>
                                     </select>
                                 </div>
                             </div>
@@ -334,24 +342,28 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="firm_name" class="form-label">Firm Name *</label>
                                     <input type="text" class="form-control" id="firm_name" name="firm_name" 
-                                           placeholder="e.g., ICT Authority" required>
+                                           placeholder="e.g., ICT Authority" required
+                                           value="{{ existing_submission.firm_name|default:'' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="firm_email" class="form-label">Firm Email Address *</label>
                                     <input type="email" class="form-control" id="firm_email" name="firm_email" 
-                                           placeholder="e.g., info@company.com" required>
+                                           placeholder="e.g., info@company.com" required
+                                           value="{{ existing_submission.firm_email|default:'' }}">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="town_city" class="form-label">Town/City *</label>
                                     <input type="text" class="form-control" id="town_city" name="town_city" 
-                                           placeholder="e.g., Nairobi" required>
+                                           placeholder="e.g., Nairobi" required
+                                           value="{{ existing_submission.town_city|default:'' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="land_mark" class="form-label">Major Land Mark Near the Firm *</label>
                                     <input type="text" class="form-control" id="land_mark" name="land_mark" 
-                                           placeholder="e.g., Next to Kenyatta Avenue" required>
+                                           placeholder="e.g., Next to Kenyatta Avenue" required
+                                           value="{{ existing_submission.land_mark|default:'' }}">
                                 </div>
                             </div>
                         </div>
@@ -366,17 +378,20 @@
                                 <div class="col-md-4 mb-3">
                                     <label for="supervisor_name" class="form-label">Supervisor's Name *</label>
                                     <input type="text" class="form-control" id="supervisor_name" name="supervisor_name" 
-                                           placeholder="e.g., John Doe" required>
+                                           placeholder="e.g., John Doe" required
+                                           value="{{ existing_submission.supervisor_name|default:'' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label for="supervisor_phone" class="form-label">Supervisor's Phone No. *</label>
                                     <input type="tel" class="form-control" id="supervisor_phone" name="supervisor_phone" 
-                                           placeholder="e.g., 0712345678" required>
+                                           placeholder="e.g., 0712345678" required
+                                           value="{{ existing_submission.supervisor_phone|default:'' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label for="supervisor_email" class="form-label">Supervisor's Email Address *</label>
                                     <input type="email" class="form-control" id="supervisor_email" name="supervisor_email" 
-                                           placeholder="e.g., supervisor@company.com" required>
+                                           placeholder="e.g., supervisor@company.com" required
+                                           value="{{ existing_submission.supervisor_email|default:'' }}">
                                 </div>
                             </div>
                         </div>
@@ -390,11 +405,13 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="start_date" class="form-label">Start Date *</label>
-                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" required
+                                           value="{{ existing_submission.start_date|date:'Y-m-d'|default:'' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="end_date" class="form-label">End Date *</label>
-                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" required
+                                           value="{{ existing_submission.end_date|date:'Y-m-d'|default:'' }}">
                                 </div>
                             </div>
                         </div>
@@ -407,48 +424,57 @@
                             </h5>
                             <p class="text-muted mb-3">Select your regular off days at the firm:</p>
                             <div class="row">
+                                {% with existing_off_days=existing_submission.off_days|default:"" %}
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_1" name="off_days" value="Monday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_1" name="off_days" value="Monday" 
+                                               {% if "Monday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_1">Monday</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_2" name="off_days" value="Tuesday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_2" name="off_days" value="Tuesday"
+                                               {% if "Tuesday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_2">Tuesday</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_3" name="off_days" value="Wednesday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_3" name="off_days" value="Wednesday"
+                                               {% if "Wednesday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_3">Wednesday</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_4" name="off_days" value="Thursday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_4" name="off_days" value="Thursday"
+                                               {% if "Thursday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_4">Thursday</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_5" name="off_days" value="Friday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_5" name="off_days" value="Friday"
+                                               {% if "Friday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_5">Friday</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_6" name="off_days" value="Saturday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_6" name="off_days" value="Saturday"
+                                               {% if "Saturday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_6">Saturday</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-sm-6 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="off_day_7" name="off_days" value="Sunday">
+                                        <input class="form-check-input" type="checkbox" id="off_day_7" name="off_days" value="Sunday"
+                                               {% if "Sunday" in existing_off_days %}checked{% endif %}>
                                         <label class="form-check-label" for="off_day_7">Sunday</label>
                                     </div>
                                 </div>
+                                {% endwith %}
                             </div>
                         </div>
 
@@ -456,17 +482,24 @@
                         <div class="alert alert-warning">
                             <h6><i class="fas fa-exclamation-triangle me-2"></i>Important Reminder</h6>
                             <p class="mb-0">
-                                <strong>Do not fill this form more than ONCE</strong> for each attachment cycle. 
-                                Multiple submissions may lead to disqualification from assessment.
+                                You can update your placement details at any time. 
+                                {% if existing_submission %}
+                                Your last update was on {{ existing_submission.updated_at|date:"F d, Y H:i" }}.
+                                {% endif %}
                             </p>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="reset" class="btn btn-outline-secondary me-md-2">Clear Form</button>
-                            <button type="submit" class="btn btn-primary">Submit Placement Form</button>
+                            <button type="reset" class="btn btn-outline-secondary me-md-2">Reset Form</button>
+                            <button type="submit" class="btn btn-primary">
+                                {% if existing_submission %}
+                                <i class="fas fa-sync-alt me-1"></i> Update Placement Form
+                                {% else %}
+                                <i class="fas fa-paper-plane me-1"></i> Submit Placement Form
+                                {% endif %}
+                            </button>
                         </div>
                     </form>
-                    {% endif %}
                 </div>
             </div>
             {% endif %}
@@ -540,7 +573,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('placementForm');
-    if (!form) return; // If form doesn't exist (already submitted), exit
+    if (!form) return;
 
     const startDateInput = document.getElementById('start_date');
     const endDateInput = document.getElementById('end_date');
@@ -591,6 +624,11 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('is-invalid');
         });
     });
+
+    // Pre-fill form with existing data if available
+    {% if existing_submission %}
+    console.log('Pre-filling form with existing submission data');
+    {% endif %}
 });
 </script>
 {% endblock %}

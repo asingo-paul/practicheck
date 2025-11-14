@@ -1,89 +1,628 @@
-<!-- attachments/export/logbook_pdf.html -->
+<!-- templates/attachments/export/logbook_pdf.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Logbook Export - {{ user.get_full_name }}</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; color: #333; }
-    h1, h2, h3 { margin: 0; padding: 5px 0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-    th, td { border: 1px solid #444; padding: 6px; text-align: left; vertical-align: top; }
-    th { background-color: #f8f8f8; font-weight: bold; }
-    .header { margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 10px; }
-    .info { margin: 15px 0; }
-    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #666; border-top: 1px solid #ccc; padding-top: 8px; }
-    .label { font-weight: bold; }
-  </style>
+    <meta charset="utf-8">
+    <title>Industrial Attachment Logbook - {{ university_name }} - {{ attachment.organization }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-left {
+                content: "{{ university_name }} - Generated on: {{ now|date:'F d, Y' }}";
+                font-size: 9px;
+                color: #666;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            font-size: 12px;
+        }
+        
+        .university-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .university-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .university-subtitle {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin: 5px 0 0 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px -20px 30px -20px;
+        }
+        
+        .student-info {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .info-row {
+            display: table-row;
+        }
+        
+        .info-label {
+            display: table-cell;
+            font-weight: bold;
+            padding: 4px 10px 4px 0;
+            width: 30%;
+        }
+        
+        .info-value {
+            display: table-cell;
+            padding: 4px 0;
+        }
+        
+        .entry-page {
+            page-break-after: always;
+            margin-bottom: 30px;
+        }
+        
+        .entry-page:last-child {
+            page-break-after: avoid;
+        }
+        
+        .entry-header {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            border-radius: 6px 6px 0 0;
+            margin-bottom: 0;
+        }
+        
+        .entry-content {
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            padding: 15px;
+        }
+        
+        .section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+        
+        .numbered-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .numbered-list li {
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        
+        .supervisor-comments {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            margin-top: 15px;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #bdc3c7;
+        }
+        
+        .signature-grid {
+            display: table;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .signature-box {
+            display: table-cell;
+            width: 33.33%;
+            text-align: center;
+            padding: 15px;
+            vertical-align: top;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #7f8c8d;
+            margin: 40px 0 5px 0;
+        }
+        
+        .signature-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .signature-role {
+            color: #7f8c8d;
+            font-size: 11px;
+        }
+        
+        .entry-number {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        
+        .stats-grid {
+            display: table;
+            width: 100%;
+            margin: 20px 0;
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        
+        .stat-box {
+            display: table-cell;
+            text-align: center;
+            padding: 10px;
+            border-right: 1px solid #bdc3c7;
+        }
+        
+        .stat-box:last-child {
+            border-right: none;
+        }
+        
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #bdc3c7;
+            font-size: 9px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        
+        .empty-section {
+            color: #95a5a6;
+            font-style: italic;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .department-info {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 11px;
+        }
+    </style>
 </head>
 <body>
+    <!-- Cover Page -->
+    <div class="university-header">
+        <h1 class="university-name">{{ university_name|upper }}</h1>
+        <p class="university-subtitle">DEPARTMENT OF {{ department_name|default:"COMPUTING"|upper }}</p>
+        <p class="university-subtitle">INDUSTRIAL ATTACHMENT PROGRAM</p>
+    </div>
 
-  <!-- Header -->
-  <div class="header">
-    <h1>Student Logbook</h1>
-    <p><strong>Generated on:</strong> {{ now|date:"Y-m-d H:i" }}</p>
-  </div>
+    <div class="header">
+        <h1 style="margin: 0; font-size: 24px;">INDUSTRIAL ATTACHMENT LOGBOOK</h1>
+        <h2 style="margin: 10px 0; font-size: 20px;">{{ attachment.organization|upper }}</h2>
+        <p style="margin: 5px 0; font-size: 14px;">{{ attachment.start_date|date:"F Y" }} - {{ attachment.end_date|date:"F Y" }}</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.9;">{{ university_name }}</p>
+    </div>
 
-  <!-- Student Info -->
-  <div class="info">
-    <h2>Student Information</h2>
-    <p><span class="label">Name:</span> {{ user.get_full_name }}</p>
-    <p><span class="label">Email:</span> {{ user.email }}</p>
-  </div>
+    <div class="student-info">
+        <h3 style="margin-top: 0; color: #2c3e50;">STUDENT INFORMATION</h3>
+        
+        <div class="department-info">
+            <strong>ACADEMIC INSTITUTION:</strong> {{ university_name }} 
+            {% if department_name %} | <strong>DEPARTMENT:</strong> {{ department_name }}{% endif %}
+            {% if course_name %} | <strong>COURSE:</strong> {{ course_name }}{% endif %}
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Full Name:</div>
+                <div class="info-value">{{ user.get_full_name|upper }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Registration Number:</div>
+                <div class="info-value">{{ user.student_id|default:"N/A"|upper }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Student Email:</div>
+                <div class="info-value">{{ user.email }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Academic Year:</div>
+                <div class="info-value">{{ academic_year|default:"2024/2025" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Attachment Organization:</div>
+                <div class="info-value">{{ attachment.organization }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Organization Department:</div>
+                <div class="info-value">{{ attachment.department|default:"Not specified" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Industry Supervisor:</div>
+                <div class="info-value">{{ attachment.supervisor_name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Supervisor Email:</div>
+                <div class="info-value">{{ attachment.supervisor_email|default:"Not provided" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Attachment Period:</div>
+                <div class="info-value">{{ attachment.start_date|date:"F d, Y" }} to {{ attachment.end_date|date:"F d, Y" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">University Lecturer:</div>
+                <div class="info-value">{{ lecturer_name|default:"To be assigned" }}</div>
+            </div>
+        </div>
+    </div>
 
-  <!-- Attachment Info -->
-  <div class="info">
-    <h2>Attachment Details</h2>
-    <p><span class="label">Organization:</span> {{ attachment.organization }}</p>
-    <p><span class="label">Department:</span> {{ attachment.department }}</p>
-    <p><span class="label">Supervisor:</span> {{ attachment.supervisor_name }} 
-      ({{ attachment.supervisor_email }}, {{ attachment.supervisor_phone }})</p>
-    <p><span class="label">Start Date:</span> {{ attachment.start_date }}</p>
-    <p><span class="label">End Date:</span> {{ attachment.end_date }}</p>
-    <p><span class="label">Status:</span> {{ attachment.status }}</p>
-  </div>
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-number">{{ entries|length }}</div>
+            <div class="stat-label">TOTAL ENTRIES</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ total_hours }}</div>
+            <div class="stat-label">TOTAL HOURS</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ entries_with_comments }}</div>
+            <div class="stat-label">REVIEWED ENTRIES</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ progress_percentage }}%</div>
+            <div class="stat-label">COMPLETION</div>
+        </div>
+    </div>
 
-  <!-- Entries -->
-  <div class="info">
-    <h2>Logbook Entries</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Department/Section</th>
-          <th>Tasks</th>
-          <th>Skills Learned</th>
-          <th>Achievements</th>
-          <th>Challenges</th>
-          <th>Hours Worked</th>
-          <th>Supervisor Comments</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for entry in entries %}
-        <tr>
-          <td>{{ entry.entry_date|date:"Y-m-d" }}</td>
-          <td>{{ entry.department_section }}</td>
-          <td>{{ entry.tasks }}</td>
-          <td>{{ entry.skills_learned }}</td>
-          <td>{{ entry.achievements }}</td>
-          <td>{{ entry.challenges }}</td>
-          <td>{{ entry.hours_worked }}</td>
-          <td>{{ entry.supervisor_comments }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="8" style="text-align: center; font-style: italic; color: #777;">No entries available.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+    <!-- Signature Section for Cover Page -->
+    <div class="signature-section">
+        <h3 style="text-align: center; color: #2c3e50;">CERTIFICATION</h3>
+        <p style="text-align: center; font-size: 11px; color: #7f8c8d;">
+            This logbook contains a true record of work done during the industrial attachment period at {{ attachment.organization }}<br>
+            as part of the academic requirements of {{ university_name }}.
+        </p>
+        
+        <div class="signature-grid">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ user.get_full_name|upper }}</div>
+                <div class="signature-role">STUDENT</div>
+                <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                    {{ university_name }}
+                </div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ attachment.supervisor_name|upper }}</div>
+                <div class="signature-role">INDUSTRY SUPERVISOR</div>
+                <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                    {{ attachment.organization }}
+                </div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ lecturer_name|default:"LECTURER"|upper }}</div>
+                <div class="signature-role">UNIVERSITY LECTURER</div>
+                <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                    {{ university_name }}
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <!-- Footer -->
-  <div class="footer">
-    PractiCheck Logbook Export — {{ now|date:"Y-m-d" }}
-  </div>
+    <div class="footer">
+        <p>{{ university_name }} - Industrial Attachment Logbook - {{ attachment.organization }} - {{ user.get_full_name }}</p>
+    </div>
 
+    <!-- Individual Entry Pages -->
+    {% for entry in entries %}
+    <div class="page-break"></div>
+    
+    <!-- University Header for each page -->
+    <div class="university-header" style="margin-bottom: 10px; padding: 5px;">
+        <p style="margin: 0; font-size: 10px; font-weight: bold; color: #2c3e50;">
+            {{ university_name }} - Industrial Attachment Program
+        </p>
+    </div>
+    
+    <div class="entry-page">
+        <div class="header" style="padding: 15px; margin-bottom: 20px;">
+            <h3 style="margin: 0; font-size: 18px;">LOGBOOK ENTRY #{{ forloop.counter }}</h3>
+            <p style="margin: 5px 0; font-size: 14px;">{{ entry.entry_date|date:"l, F d, Y"|upper }}</p>
+            <p style="margin: 0; font-size: 11px; opacity: 0.9;">
+                {{ university_name }} Student at {{ attachment.organization }}
+            </p>
+        </div>
+
+        <div class="entry-header">
+            <span class="entry-number">ENTRY {{ forloop.counter }}</span>
+            <span style="font-size: 14px;">
+                {{ entry.department_section|default:"General"|upper }} | {{ entry.hours_worked }} HOURS
+                {% if entry.supervisor_comments %}
+                | <span style="color: #2ecc71;">REVIEWED ✓</span>
+                {% else %}
+                | <span style="color: #e74c3c;">PENDING REVIEW</span>
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="entry-content">
+            <!-- Tasks Section -->
+            <div class="section">
+                <div class="section-title">TASKS COMPLETED</div>
+                {% if entry.tasks %}
+                <ol class="numbered-list">
+                    {% for task in entry.tasks.splitlines %}
+                        {% if task.strip %}
+                        <li>{{ task.strip }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <p class="empty-section">No tasks recorded for this day.</p>
+                {% endif %}
+            </div>
+
+            <!-- Skills Learned Section -->
+            <div class="section">
+                <div class="section-title">SKILLS & KNOWLEDGE GAINED</div>
+                {% if entry.skills_learned %}
+                <ol class="numbered-list">
+                    {% for skill in entry.skills_learned.splitlines %}
+                        {% if skill.strip %}
+                        <li>{{ skill.strip }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <p class="empty-section">No skills recorded for this day.</p>
+                {% endif %}
+            </div>
+
+            <!-- Achievements Section -->
+            {% if entry.achievements %}
+            <div class="section">
+                <div class="section-title">ACHIEVEMENTS & ACCOMPLISHMENTS</div>
+                <ol class="numbered-list">
+                    {% for achievement in entry.achievements.splitlines %}
+                        {% if achievement.strip %}
+                        <li>{{ achievement.strip }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+            {% endif %}
+
+            <!-- Challenges Section -->
+            {% if entry.challenges %}
+            <div class="section">
+                <div class="section-title">CHALLENGES & SOLUTIONS</div>
+                <ol class="numbered-list">
+                    {% for challenge in entry.challenges.splitlines %}
+                        {% if challenge.strip %}
+                        <li>{{ challenge.strip }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+            {% endif %}
+
+            <!-- Supervisor Comments -->
+            {% if entry.supervisor_comments %}
+            <div class="supervisor-comments">
+                <div class="section-title">SUPERVISOR'S FEEDBACK</div>
+                <div style="padding: 8px;">
+                    {{ entry.supervisor_comments|linebreaks }}
+                </div>
+                <div style="margin-top: 10px; font-style: italic; color: #3498db;">
+                    — {{ attachment.supervisor_name }}, Industry Supervisor<br>
+                    <span style="font-size: 10px;">{{ attachment.organization }}</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Entry Signature -->
+            <div class="signature-section" style="margin-top: 30px;">
+                <div class="signature-grid">
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-name">{{ user.get_full_name|upper }}</div>
+                        <div class="signature-role">STUDENT SIGNATURE</div>
+                        <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                            {{ university_name }}<br>
+                            Date: {{ entry.entry_date|date:"M d, Y" }}
+                        </div>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-name">{{ attachment.supervisor_name|upper }}</div>
+                        <div class="signature-role">SUPERVISOR SIGNATURE</div>
+                        <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                            {{ attachment.organization }}<br>
+                            {% if entry.supervisor_comments %}Reviewed{% else %}Pending Review{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Final Summary Page -->
+    <div class="page-break"></div>
+    
+    <!-- University Header -->
+    <div class="university-header">
+        <h1 class="university-name">{{ university_name|upper }}</h1>
+        <p class="university-subtitle">INDUSTRIAL ATTACHMENT SUMMARY REPORT</p>
+    </div>
+
+    <div class="header">
+        <h2 style="margin: 0;">ATTACHMENT SUMMARY & EVALUATION</h2>
+        <p style="margin: 5px 0;">{{ attachment.start_date|date:"F d, Y" }} - {{ attachment.end_date|date:"F d, Y" }}</p>
+        <p style="margin: 0; font-size: 12px; opacity: 0.9;">
+            {{ university_name }} - {{ department_name|default:"Department of Computing" }}
+        </p>
+    </div>
+
+    <div class="student-info">
+        <h3>ACADEMIC & PERFORMANCE OVERVIEW</h3>
+        
+        <div class="department-info">
+            <strong>ACADEMIC INSTITUTION:</strong> {{ university_name }}
+            {% if department_name %} | <strong>DEPARTMENT:</strong> {{ department_name }}{% endif %}
+            {% if course_name %} | <strong>PROGRAM:</strong> {{ course_name }}{% endif %}
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Student Name:</div>
+                <div class="info-value">{{ user.get_full_name|upper }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Registration Number:</div>
+                <div class="info-value">{{ user.student_id|default:"N/A"|upper }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Attachment Organization:</div>
+                <div class="info-value">{{ attachment.organization }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Working Days:</div>
+                <div class="info-value">{{ entries|length }} days</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Hours Worked:</div>
+                <div class="info-value">{{ total_hours }} hours</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Average Hours Per Day:</div>
+                <div class="info-value">
+                    {% if entries|length > 0 %}
+                        {{ average_hours_per_day|floatformat:1 }} hours
+                    {% else %}
+                        0 hours
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Entries Reviewed:</div>
+                <div class="info-value">{{ entries_with_comments }} of {{ entries|length }} ({{ reviewed_percentage|floatformat:1 }}%)</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Attachment Progress:</div>
+                <div class="info-value">{{ progress_percentage }}% complete</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">University Lecturer:</div>
+                <div class="info-value">{{ lecturer_name|default:"To be assigned" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Signatures -->
+    <div class="signature-section">
+        <h3 style="text-align: center; color: #2c3e50;">FINAL APPROVAL & ASSESSMENT</h3>
+        <p style="text-align: center; font-size: 11px; color: #7f8c8d; margin-bottom: 25px;">
+            This industrial attachment program has been completed successfully at {{ attachment.organization }}<br>
+            as part of the academic curriculum of {{ university_name }}.
+        </p>
+        
+        <div class="signature-grid">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ user.get_full_name|upper }}</div>
+                <div class="signature-role">STUDENT</div>
+                <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                    {{ university_name }}<br>
+                    Date: _________________
+                </div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ attachment.supervisor_name|upper }}</div>
+                <div class="signature-role">INDUSTRY SUPERVISOR</div>
+                <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                    {{ attachment.organization }}<br>
+                    Date: _________________
+                </div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ lecturer_name|default:"LECTURER"|upper }}</div>
+                <div class="signature-role">UNIVERSITY LECTURER</div>
+                <div style="font-size: 9px; color: #7f8c8d; margin-top: 3px;">
+                    {{ university_name }}<br>
+                    Date: _________________
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>{{ university_name }} - Department of {{ department_name|default:"Computing" }} - Industrial Attachment Logbook - {{ user.get_full_name }} - Page {% if entries %}{{ entries|length|add:2 }}{% else %}2{% endif %}</p>
+    </div>
 </body>
 </html>
