@@ -116,24 +116,6 @@
                             Supervisor Dashboard
                         </a>
                     </li>
-                    <li class="nav-item mt-4">
-                        <a class="nav-link text-warning" href="#">
-                            <i class="fas fa-clipboard-list me-2"></i>
-                            Evaluation Forms
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-comments me-2"></i>
-                            Feedback
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-cog me-2"></i>
-                            Settings
-                        </a>
-                    </li>
                 </ul>
                 
                 <hr>
@@ -145,7 +127,7 @@
                 <ul class="nav flex-column mb-2">
                     {% for attachment in supervised_attachments %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}">
+                        <a class="nav-link" href="{% url 'attachments:supervisor_logbook' attachment_id=attachment.id %}">
                             <i class="fas fa-user-graduate me-2"></i>
                             {{ attachment.student.get_full_name }}
                         </a>
@@ -199,12 +181,14 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Evaluations Completed
+                                        Ongoing Attachments
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ evaluations|length }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ ongoing_attachments_count }}
+                                    </div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                                    <i class="fas fa-clock fa-2x text-gray-300"></i>
                                 </div>
                             </div>
                         </div>
@@ -217,14 +201,14 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        Pending Approvals
+                                        Completed Attachments
                                     </div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                        {{ supervised_attachments|length }}
+                                        {{ completed_attachments_count }}
                                     </div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                    <i class="fas fa-check-circle fa-2x text-gray-300"></i>
                                 </div>
                             </div>
                         </div>
@@ -237,12 +221,14 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Average Rating Given
+                                        Logbooks Reviewed
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ average_rating }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ reviewed_entries_count }}
+                                    </div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-star fa-2x text-gray-300"></i>
+                                    <i class="fas fa-book fa-2x text-gray-300"></i>
                                 </div>
                             </div>
                         </div>
@@ -271,7 +257,8 @@
                                             <th>Start Date</th>
                                             <th>End Date</th>
                                             <th>Status</th>
-                                            <th>Evaluation</th>
+                                            <th>Progress</th>
+                                            <th>Reviewed</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -293,28 +280,14 @@
                                             <td>{{ attachment.start_date }}</td>
                                             <td>{{ attachment.end_date }}</td>
                                             <td>
-                                                <span class="badge bg-{% if attachment.status == 'approved' %}success
-                                                          {% elif attachment.status == 'ongoing' %}info
-                                                          {% elif attachment.status == 'completed' %}primary
-                                                          {% elif attachment.status == 'cancelled' %}danger
-                                                          {% else %}warning{% endif %}">
-                                                    {{ attachment.get_status_display }}
-                                                </span>
-                                                
-                                                {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
-                                                <br>
-                                                <small class="text-muted">
-                                                    Progress: {{ attachment.progress_percentage }}%
-                                                    {% if attachment.progress_percentage == 100 %}
-                                                    - Completed
-                                                    {% else %}
-                                                    - {{ attachment.days_remaining }} days left
-                                                    {% endif %}
-                                                </small>
-                                                
-                                                <!-- Progress bar for active attachments -->
-                                                {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
-                                                <div class="progress mt-1" style="height: 5px;">
+                                                {% if attachment.end_date < today %}
+                                                    <span class="badge bg-primary">Completed</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Ongoing</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 8px;">
                                                     <div class="progress-bar bg-success" 
                                                          style="width: {{ attachment.progress_percentage }}%"
                                                          role="progressbar" 
@@ -323,20 +296,28 @@
                                                          aria-valuemax="100">
                                                     </div>
                                                 </div>
-                                                {% endif %}
-                                                {% endif %}
+                                                <small class="text-muted">
+                                                    {{ attachment.progress_percentage }}% complete
+                                                    {% if attachment.progress_percentage < 100 %}
+                                                    - {{ attachment.days_remaining }} days left
+                                                    {% else %}
+                                                    - Completed
+                                                    {% endif %}
+                                                </small>
                                             </td>
                                             <td>
-                                                {% if attachment.supervisor_evaluation %}
-                                                <span class="badge bg-success">Completed</span>
-                                                {% else %}
-                                                <span class="badge bg-warning">Pending</span>
-                                                {% endif %}
+                                                <span class="badge {% if attachment.reviewed_entries_count > 0 %}bg-success{% else %}bg-warning{% endif %}">
+                                                    {{ attachment.reviewed_entries_count }} / {{ attachment.total_entries_count }}
+                                                </span>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ attachment.review_percentage }}% reviewed
+                                                </small>
                                             </td>
                                             <td>
-                                                <a href="{% url 'evaluations:evaluation_form' attachment_id=attachment.id %}" 
-                                                   class="btn btn-sm btn-primary mt-1">
-                                                    <i class="fas fa-edit me-1"></i> Evaluate
+                                                <a href="{% url 'attachments:supervisor_logbook' attachment_id=attachment.id %}" 
+                                                   class="btn btn-sm btn-primary mb-1">
+                                                    <i class="fas fa-book me-1"></i> View Logbook
                                                 </a>
                                                 
                                                 {% if attachment.status == 'approved' or attachment.status == 'ongoing' %}
@@ -365,68 +346,39 @@
                 </div>
             </div>
 
-            <!-- Recent Evaluations -->
+            <!-- Recent Logbook Activity -->
             <div class="row">
                 <div class="col-12">
                     <div class="card shadow">
                         <div class="card-header bg-white py-3">
                             <h5 class="m-0 font-weight-bold text-primary">
                                 <i class="fas fa-history me-2"></i>
-                                Recent Evaluations
+                                Recent Logbook Activity
                             </h5>
                         </div>
                         <div class="card-body">
-                            {% if evaluations %}
+                            {% if recent_reviewed_entries %}
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
                                             <th>Student</th>
-                                            <th>Evaluation Date</th>
-                                            <th>Overall Score</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
+                                            <th>Entry Date</th>
+                                            <th>Tasks</th>
+                                            <th>Your Comment</th>
+                                            <th>Reviewed Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for evaluation in evaluations %}
+                                        {% for entry in recent_reviewed_entries %}
                                         <tr>
                                             <td>
-                                                <div class="d-flex align-items-center">
-                                                    <img src="https://ui-avatars.com/api/?name={{ evaluation.attachment.student.get_full_name }}&background=3498db&color=fff&size=32" 
-                                                         alt="{{ evaluation.attachment.student.get_full_name }}" class="rounded-circle me-2">
-                                                    <div>
-                                                        <h6 class="mb-0">{{ evaluation.attachment.student.get_full_name }}</h6>
-                                                        <small class="text-muted">{{ evaluation.attachment.organization }}</small>
-                                                    </div>
-                                                </div>
+                                                <strong>{{ entry.attachment.student.get_full_name }}</strong>
                                             </td>
-                                            <td>{{ evaluation.submitted_date }}</td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="progress flex-grow-1 me-2" style="height: 8px;">
-                                                        <div class="progress-bar bg-success" 
-                                                             style="width: {{ evaluation.overall_score }}%"></div>
-                                                    </div>
-                                                    <span>{{ evaluation.overall_score }}/100</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {% if evaluation.attachment.lecturer_evaluation %}
-                                                <span class="badge bg-info">Lecturer Reviewed</span>
-                                                {% else %}
-                                                <span class="badge bg-warning">Awaiting Lecturer</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <a href="#" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i> View
-                                                </a>
-                                                <a href="{% url 'evaluations:evaluation_form' attachment_id=evaluation.attachment.id %}" 
-                                                   class="btn btn-sm btn-outline-secondary">
-                                                    <i class="fas fa-edit"></i> Edit
-                                                </a>
-                                            </td>
+                                            <td>{{ entry.entry_date|date:"M. d, Y" }}</td>
+                                            <td>{{ entry.tasks|truncatewords:8|default:"-" }}</td>
+                                            <td>{{ entry.supervisor_comments|truncatewords:10|default:"-" }}</td>
+                                            <td>{{ entry.updated_at|date:"M. d, Y" }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -434,9 +386,12 @@
                             </div>
                             {% else %}
                             <div class="text-center py-4">
-                                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No Evaluations Yet</h5>
-                                <p class="text-muted">You haven't completed any evaluations yet.</p>
+                                <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Recent Reviews</h5>
+                                <p class="text-muted">You haven't reviewed any logbook entries yet.</p>
+                                <a href="#" class="btn btn-outline-primary">
+                                    <i class="fas fa-book me-1"></i> Start Reviewing
+                                </a>
                             </div>
                             {% endif %}
                         </div>
@@ -477,70 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
         order: [[0, 'asc']]
     });
 
-    // Approval functionality
-    $('.approve-btn').click(function() {
-        const attachmentId = $(this).data('attachment-id');
-        const button = $(this);
-        
-        if (confirm('Are you sure you want to approve this attachment? The student will be notified and their progress will start tracking.')) {
-            $.ajax({
-                url: '{% url "attachments:approve_attachment" 0 %}'.replace('0', attachmentId),
-                method: 'POST',
-                data: {
-                    'csrfmiddlewaretoken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Show success message
-                        showNotification('Success', response.message, 'success');
-                        
-                        // Reload the page after a short delay
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showNotification('Error', response.error, 'error');
-                    }
-                },
-                error: function(xhr) {
-                    const response = xhr.responseJSON;
-                    showNotification('Error', response?.error || 'An error occurred while approving the attachment', 'error');
-                }
-            });
-        }
-    });
-
-    // Rejection functionality
-    $('.reject-btn').click(function() {
-        const attachmentId = $(this).data('attachment-id');
-        const button = $(this);
-        
-        if (confirm('Are you sure you want to reject this attachment? The student will be notified.')) {
-            $.ajax({
-                url: '{% url "attachments:reject_attachment" 0 %}'.replace('0', attachmentId),
-                method: 'POST',
-                data: {
-                    'csrfmiddlewaretoken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        showNotification('Success', response.message, 'success');
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showNotification('Error', response.error, 'error');
-                    }
-                },
-                error: function(xhr) {
-                    const response = xhr.responseJSON;
-                    showNotification('Error', response?.error || 'An error occurred while rejecting the attachment', 'error');
-                }
-            });
-        }
-    });
-
-    // Notification function (you can replace with toast library)
+    // Notification function
     function showNotification(title, message, type) {
         // Simple alert for now - you can integrate a toast library like Toastr
         alert(`${title}: ${message}`);

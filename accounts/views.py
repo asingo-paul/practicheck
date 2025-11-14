@@ -1,17 +1,19 @@
-
 # accounts/views.py - Updated version
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout, authenticate, authenticate, get_backends
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from .forms import UserRegistrationForm, UserLoginForm
-from .models import StudentProfile, SupervisorProfile, LecturerProfile
+from .models import StudentProfile, SupervisorProfile, LecturerProfile, CustomUser
 from django.contrib.auth import get_user_model
 from attachments.models import Attachment, LogbookEntry, PlacementFormSubmission, Lecturer
 from attachments.models import Department, Course
 from .email_utils import send_welcome_email, send_admin_notification_email
 from django.conf import settings
+from django.contrib.auth.forms import PasswordChangeForm
+from django.core.files.storage import default_storage
+import json
 
 User = get_user_model()
 
@@ -335,7 +337,6 @@ def user_login(request):
             'form': form,
             'role_map': ROLE_MAP
         })
-#admin views page for login and takes to the portal
 
 def admin_login(request):
     """
@@ -411,6 +412,9 @@ def profile(request):
     logbook_entries = []
     total_entries = 0
     completion_rate = 0
+    password_form = PasswordChangeForm(user)
+    profile_updated = False
+    password_updated = False
 
     if hasattr(user, 'student_profile'):
         profile = user.student_profile
@@ -426,12 +430,95 @@ def profile(request):
     elif hasattr(user, 'lecturer_profile'):
         profile = user.lecturer_profile
 
+    # Handle profile information update
+    if request.method == 'POST':
+        if 'update_profile' in request.POST:
+            # Update basic user information
+            user.first_name = request.POST.get('first_name', user.first_name)
+            user.last_name = request.POST.get('last_name', user.last_name)
+            user.email = request.POST.get('email', user.email)
+            user.phone_number = request.POST.get('phone_number', user.phone_number)
+            user.save()
+
+            # Update profile-specific information
+            if user.user_type == 1 and hasattr(user, 'student_profile'):
+                user.student_profile.student_id = request.POST.get('student_id', user.student_profile.student_id)
+                user.student_profile.course = request.POST.get('course', user.student_profile.course)
+                user.student_profile.year_of_study = request.POST.get('year_of_study', user.student_profile.year_of_study)
+                user.student_profile.department = request.POST.get('department', user.student_profile.department)
+                user.student_profile.university = request.POST.get('university', user.student_profile.university)
+                user.student_profile.save()
+            
+            elif user.user_type == 2 and hasattr(user, 'supervisor_profile'):
+                user.supervisor_profile.organization = request.POST.get('organization', user.supervisor_profile.organization)
+                user.supervisor_profile.position = request.POST.get('position', user.supervisor_profile.position)
+                user.supervisor_profile.department = request.POST.get('department', user.supervisor_profile.department)
+                user.supervisor_profile.save()
+            
+            elif user.user_type == 3 and hasattr(user, 'lecturer_profile'):
+                user.lecturer_profile.staff_id = request.POST.get('staff_id', user.lecturer_profile.staff_id)
+                user.lecturer_profile.department = request.POST.get('department', user.lecturer_profile.department)
+                user.lecturer_profile.faculty = request.POST.get('faculty', user.lecturer_profile.faculty)
+                user.lecturer_profile.save()
+            
+            profile_updated = True
+            messages.success(request, "Profile updated successfully!")
+
+        elif 'change_password' in request.POST:
+            password_form = PasswordChangeForm(user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                password_updated = True
+                messages.success(request, "Password changed successfully!")
+            else:
+                for field, errors in password_form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{error}")
+
+        elif 'update_notifications' in request.POST:
+            # Handle notification preferences
+            email_notifications = request.POST.get('email_notifications') == 'on'
+            logbook_reminders = request.POST.get('logbook_reminders') == 'on'
+            evaluation_alerts = request.POST.get('evaluation_alerts') == 'on'
+            newsletter = request.POST.get('newsletter') == 'on'
+            
+            # Save notification preferences
+            user.notification_preferences = {
+                'email_notifications': email_notifications,
+                'logbook_reminders': logbook_reminders,
+                'evaluation_alerts': evaluation_alerts,
+                'newsletter': newsletter
+            }
+            user.save()
+            messages.success(request, "Notification preferences updated!")
+
+        elif 'toggle_dark_theme' in request.POST:
+            # Toggle dark theme preference
+            user.dark_theme_enabled = not getattr(user, 'dark_theme_enabled', False)
+            user.save()
+            theme_status = "enabled" if user.dark_theme_enabled else "disabled"
+            messages.success(request, f"Dark theme {theme_status}!")
+
+    # Get current notification preferences
+    notification_prefs = getattr(user, 'notification_preferences', {
+        'email_notifications': True,
+        'logbook_reminders': True,
+        'evaluation_alerts': True,
+        'newsletter': True
+    })
+
     return render(request, 'accounts/profile.html', {
         'user': user,
         'profile': profile,
         'logbook_entries': logbook_entries,
         'total_entries': total_entries,
         'completion_rate': completion_rate,
+        'password_form': password_form,
+        'profile_updated': profile_updated,
+        'password_updated': password_updated,
+        'notification_prefs': notification_prefs,
+        'dark_theme_enabled': getattr(user, 'dark_theme_enabled', False)
     })
 
 def check_username(request):
@@ -451,9 +538,15 @@ def upload_profile_picture(request):
     return redirect("accounts:profile")
 
 def check_student_id(request):
-    student_id = request.GET.get('student_id', None)
-    is_taken = User.objects.filter(student_id__iexact=student_id).exists()
-    return JsonResponse({'is_taken': is_taken})
+    """Check if student ID is already taken in BOTH User and StudentProfile"""
+    student_id = request.GET.get('student_id', '')
+    if student_id:
+        # Check both User model and StudentProfile model
+        is_taken_user = User.objects.filter(student_id__iexact=student_id).exists()
+        is_taken_profile = StudentProfile.objects.filter(student_id__iexact=student_id).exists()
+        is_taken = is_taken_user or is_taken_profile
+        return JsonResponse({'is_taken': is_taken})
+    return JsonResponse({'is_taken': False})
     
 @login_required
 def student_dashboard(request):
@@ -467,12 +560,6 @@ def supervisor_dashboard(request):
 def lecturer_dashboard(request):
     return render(request, 'evaluations/lecturer_dashboard.html', {'user': request.user})
 
-def about(request):
-    """
-    Renders the About Us page.
-    """
-    return render(request, 'about.html')
-
 @login_required
 def admin_profile(request):
     user = request.user
@@ -480,6 +567,9 @@ def admin_profile(request):
     logbook_entries = []
     total_entries = 0
     completion_rate = 0
+    password_form = PasswordChangeForm(user)
+    profile_updated = False
+    password_updated = False
 
     if hasattr(user, 'student_profile'):
         profile = user.student_profile
@@ -495,22 +585,72 @@ def admin_profile(request):
     elif hasattr(user, 'lecturer_profile'):
         profile = user.lecturer_profile
 
+    # Handle profile information update for admin profile
+    if request.method == 'POST':
+        if 'update_profile' in request.POST:
+            # Update basic user information
+            user.first_name = request.POST.get('first_name', user.first_name)
+            user.last_name = request.POST.get('last_name', user.last_name)
+            user.email = request.POST.get('email', user.email)
+            user.phone_number = request.POST.get('phone_number', user.phone_number)
+            user.save()
+
+            profile_updated = True
+            messages.success(request, "Profile updated successfully!")
+
+        elif 'change_password' in request.POST:
+            password_form = PasswordChangeForm(user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                password_updated = True
+                messages.success(request, "Password changed successfully!")
+            else:
+                for field, errors in password_form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{error}")
+
+        elif 'update_notifications' in request.POST:
+            # Handle notification preferences
+            email_notifications = request.POST.get('email_notifications') == 'on'
+            logbook_reminders = request.POST.get('logbook_reminders') == 'on'
+            evaluation_alerts = request.POST.get('evaluation_alerts') == 'on'
+            newsletter = request.POST.get('newsletter') == 'on'
+            
+            # Save notification preferences
+            user.notification_preferences = {
+                'email_notifications': email_notifications,
+                'logbook_reminders': logbook_reminders,
+                'evaluation_alerts': evaluation_alerts,
+                'newsletter': newsletter
+            }
+            user.save()
+            messages.success(request, "Notification preferences updated!")
+
+        elif 'toggle_dark_theme' in request.POST:
+            # Toggle dark theme preference
+            user.dark_theme_enabled = not getattr(user, 'dark_theme_enabled', False)
+            user.save()
+            theme_status = "enabled" if user.dark_theme_enabled else "disabled"
+            messages.success(request, f"Dark theme {theme_status}!")
+
+    # Get current notification preferences
+    notification_prefs = getattr(user, 'notification_preferences', {
+        'email_notifications': True,
+        'logbook_reminders': True,
+        'evaluation_alerts': True,
+        'newsletter': True
+    })
+
     return render(request, 'accounts/admin_profile.html', {
         'user': user,
         'profile': profile,
         'logbook_entries': logbook_entries,
         'total_entries': total_entries,
         'completion_rate': completion_rate,
+        'password_form': password_form,
+        'profile_updated': profile_updated,
+        'password_updated': password_updated,
+        'notification_prefs': notification_prefs,
+        'dark_theme_enabled': getattr(user, 'dark_theme_enabled', False)
     })
-
-
-def check_student_id(request):
-    """Check if student ID is already taken in BOTH User and StudentProfile"""
-    student_id = request.GET.get('student_id', '')
-    if student_id:
-        # Check both User model and StudentProfile model
-        is_taken_user = User.objects.filter(student_id__iexact=student_id).exists()
-        is_taken_profile = StudentProfile.objects.filter(student_id__iexact=student_id).exists()
-        is_taken = is_taken_user or is_taken_profile
-        return JsonResponse({'is_taken': is_taken})
-    return JsonResponse({'is_taken': False})

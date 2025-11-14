@@ -31,35 +31,6 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-# class CustomUser(AbstractUser):
-#     username = None  # Remove default username
-
-#     USER_TYPE_CHOICES = (
-#         (1, "Student"),
-#         (2, "Supervisor"),
-#         (3, "Lecturer"),
-#         (4, "Admin"),
-#     )
-#     user_type = models.PositiveSmallIntegerField(choices=USER_TYPE_CHOICES, default=1)
-
-#     email = models.EmailField(unique=True)
-#     student_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
-
-#     USERNAME_FIELD = 'email'
-#     REQUIRED_FIELDS = []  # Remove 'username' from required fields
-
-#     objects = CustomUserManager()  # Add this line
-
-#     def __str__(self):
-#         if self.user_type == 1 and hasattr(self, 'student_profile'):
-#             return self.student_profile.student_id
-#         elif self.user_type == 3 and hasattr(self, 'lecturer_profile'):
-#             return self.lecturer_profile.staff_id
-#         elif self.user_type == 2 and hasattr(self, 'supervisor_profile'):
-#             return f"{self.get_full_name()} - {self.supervisor_profile.organization}"
-#         return self.email or f"User {self.id}"
-
-
 class CustomUser(AbstractUser):
     username = None  # Remove default username
 
@@ -83,9 +54,35 @@ class CustomUser(AbstractUser):
     position = models.CharField(max_length=100, blank=True, null=True)
     supervisor_department = models.CharField(max_length=100, blank=True, null=True)
 
-    # Department and Course as ForeignKey (add these)
+    # Department and Course as ForeignKey
     department = models.ForeignKey('attachments.Department', on_delete=models.SET_NULL, null=True, blank=True)
     course = models.ForeignKey('attachments.Course', on_delete=models.SET_NULL, null=True, blank=True)
+
+    # New fields for profile functionality
+    profile_picture = models.ImageField(
+        upload_to='profile_pictures/',
+        null=True,
+        blank=True,
+        verbose_name='Profile Picture'
+    )
+    
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name='Phone Number'
+    )
+    
+    dark_theme_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Dark Theme Enabled'
+    )
+    
+    notification_preferences = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Notification Preferences'
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # Remove 'username' from required fields
@@ -101,11 +98,26 @@ class CustomUser(AbstractUser):
             return f"{self.get_full_name()} - {self.organization}"
         return self.email or f"User {self.id}"
 
+    def save(self, *args, **kwargs):
+        # Ensure notification_preferences has default structure
+        if not self.notification_preferences:
+            self.notification_preferences = {
+                'email_notifications': True,
+                'logbook_reminders': True,
+                'evaluation_alerts': True,
+                'newsletter': True
+            }
+        super().save(*args, **kwargs)
+
+    def get_user_type_display(self):
+        """Get the display name for user type"""
+        return dict(self.USER_TYPE_CHOICES).get(self.user_type, "Unknown")
+
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_profile')
     student_id = models.CharField(max_length=20, unique=True)
     course = models.CharField(max_length=100)
-    year_of_study = models.PositiveSmallIntegerField(null=True, blank=True)  # Allow null
+    year_of_study = models.PositiveSmallIntegerField(null=True, blank=True)
     university = models.CharField(max_length=200)
     department = models.CharField(max_length=100)
 

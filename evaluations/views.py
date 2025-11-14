@@ -14,6 +14,7 @@ from .models import (
 from .forms import SupervisorEvaluationForm, LecturerEvaluationForm
 from accounts.decorators import role_required, supervisor_required,lecturer_required
 from django.db.models import Avg
+from django.utils import timezone
 
 
 # def index(request):
@@ -26,22 +27,48 @@ from django.db.models import Avg
 def supervisor_dashboard(request):
     """Show supervisor dashboard with students under supervision."""
     supervised_attachments = Attachment.objects.filter(supervisor_email=request.user.email)
-    evaluations = SupervisorEvaluation.objects.filter(supervisor=request.user)
-
-    # Calculate pending evaluations
-    pending_evaluations = supervised_attachments.count() - evaluations.count()
-
-    # Calculate average rating (assuming overall_score is 0-100 scale)
-    avg_score = evaluations.aggregate(avg_score=Avg('overall_rating'))['avg_score'] or 0
-
-    # Convert 0-100 to 0-5 scale and format
-    average_rating = f"{(avg_score/20):.1f}/5"
+    
+    # Calculate statistics
+    today = timezone.now().date()
+    
+    # Count ongoing and completed attachments
+    ongoing_attachments_count = supervised_attachments.filter(end_date__gte=today).count()
+    completed_attachments_count = supervised_attachments.filter(end_date__lt=today).count()
+    
+    # Calculate total reviewed entries across all attachments
+    total_reviewed_entries = 0
+    for attachment in supervised_attachments:
+        reviewed_count = LogbookEntry.objects.filter(
+            attachment=attachment, 
+            supervisor_comments__isnull=False
+        ).count()
+        total_reviewed_entries += reviewed_count
+    
+    # Add reviewed entries count and percentage to each attachment
+    for attachment in supervised_attachments:
+        total_entries = LogbookEntry.objects.filter(attachment=attachment).count()
+        reviewed_entries = LogbookEntry.objects.filter(
+            attachment=attachment, 
+            supervisor_comments__isnull=False
+        ).count()
+        
+        attachment.total_entries_count = total_entries
+        attachment.reviewed_entries_count = reviewed_entries
+        attachment.review_percentage = round((reviewed_entries / total_entries * 100) if total_entries > 0 else 0, 1)
+    
+    # Get recent reviewed entries for the activity section
+    recent_reviewed_entries = LogbookEntry.objects.filter(
+        attachment__in=supervised_attachments,
+        supervisor_comments__isnull=False
+    ).select_related('attachment', 'attachment__student').order_by('-updated_at')[:10]
 
     return render(request, "evaluations/supervisor_dashboard.html", {
         "supervised_attachments": supervised_attachments,
-        "evaluations": evaluations,
-        "pending_evaluations": pending_evaluations,
-        "average_rating": average_rating,  # pass to template
+        "ongoing_attachments_count": ongoing_attachments_count,
+        "completed_attachments_count": completed_attachments_count,
+        "reviewed_entries_count": total_reviewed_entries,
+        "recent_reviewed_entries": recent_reviewed_entries,
+        "today": today,
     })
 
 

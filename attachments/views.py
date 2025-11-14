@@ -256,42 +256,97 @@ def edit_previous_entry(request, entry_id):
         'editing': True
     })
 
+
 @login_required
 def export_logbook(request, attachment_id, format_type):
     """Export logbook in various formats"""
     attachment = get_object_or_404(Attachment, id=attachment_id, student=request.user)
     entries = LogbookEntry.objects.filter(attachment=attachment).order_by('-entry_date')
     
+    # Calculate statistics
+    entries_with_comments = entries.filter(supervisor_comments__isnull=False).count()
+    total_hours = entries.aggregate(Sum('hours_worked'))['hours_worked__sum'] or 0
+    
+    # Calculate additional statistics for PDF
+    progress_percentage = attachment.progress_percentage
+    if entries.count() > 0:
+        average_hours_per_day = total_hours / entries.count()
+    else:
+        average_hours_per_day = 0
+    
+    if entries.count() > 0:
+        reviewed_percentage = (entries_with_comments / entries.count()) * 100
+    else:
+        reviewed_percentage = 0
+    
+    # Get university and department information
+    university_name = "Machakos University"  # Default, you can make this dynamic
+    department_name = None
+    course_name = None
+    academic_year = "2024/2025"  # Default, you can make this dynamic
+    
+    # Get user's department and course if available
+    if hasattr(request.user, 'department') and request.user.department:
+        department_name = request.user.department.name
+        university_name = getattr(request.user.department, 'university', university_name)
+    
+    if hasattr(request.user, 'course') and request.user.course:
+        course_name = request.user.course.name
+    
+    # Get academic year from student assignments or user profile
+    if hasattr(request.user, 'student_assignments') and request.user.student_assignments.exists():
+        assignment = request.user.student_assignments.first()
+        academic_year = assignment.academic_year
+    
+    # Get lecturer name if assigned
+    lecturer_name = None
+    if hasattr(request.user, 'student_assignments') and request.user.student_assignments.exists():
+        assignment = request.user.student_assignments.first()
+        lecturer_name = assignment.lecturer.user.get_full_name()
+    
     if format_type == 'pdf':
-        # PDF export
-        from django.template.loader import render_to_string
-        from weasyprint import HTML
-        
+        # PDF export with enhanced layout including university info
         html_string = render_to_string('attachments/export/logbook_pdf.html', {
             'entries': entries,
             'attachment': attachment,
             'user': request.user,
-            'now': timezone.now()
+            'now': timezone.now(),
+            'total_hours': total_hours,
+            'entries_with_comments': entries_with_comments,
+            'progress_percentage': progress_percentage,
+            'average_hours_per_day': average_hours_per_day,
+            'reviewed_percentage': reviewed_percentage,
+            'lecturer_name': lecturer_name,
+            'university_name': university_name,
+            'department_name': department_name,
+            'course_name': course_name,
+            'academic_year': academic_year,
         })
         
         html = HTML(string=html_string)
         pdf_file = html.write_pdf()
         
         response = HttpResponse(pdf_file, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="logbook_{attachment.organization}_{timezone.now().date()}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="{university_name.replace(" ", "_")}_Logbook_{attachment.organization}_{timezone.now().date()}.pdf"'
         return response
         
     elif format_type == 'csv':
-        # CSV export
-        import csv
+        # CSV export - UPDATED to include university info
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="logbook_{attachment.organization}_{timezone.now().date()}.csv"'
+        response['Content-Disposition'] = f'attachment; filename="{university_name.replace(" ", "_")}_Logbook_{attachment.organization}_{timezone.now().date()}.csv"'
         
         writer = csv.writer(response)
-        writer.writerow(['Date', 'Department/Section', 'Tasks', 'Skills Learned', 'Achievements', 'Challenges', 'Hours Worked', 'Supervisor Comments'])
+        writer.writerow(['University', 'Department', 'Student Name', 'Registration Number', 'Entry #', 'Date', 
+                        'Department/Section', 'Tasks', 'Skills Learned', 'Achievements', 'Challenges', 
+                        'Hours Worked', 'Supervisor Comments', 'Has Comments'])
         
-        for entry in entries:
+        for i, entry in enumerate(entries, 1):
             writer.writerow([
+                university_name,
+                department_name or '',
+                request.user.get_full_name(),
+                request.user.student_id or '',
+                i,
                 entry.entry_date,
                 entry.department_section,
                 entry.tasks,
@@ -299,15 +354,21 @@ def export_logbook(request, attachment_id, format_type):
                 entry.achievements,
                 entry.challenges,
                 entry.hours_worked,
-                entry.supervisor_comments
+                entry.supervisor_comments,
+                'Yes' if entry.supervisor_comments else 'No'
             ])
         
         return response
         
     elif format_type == 'json':
-        # JSON export
-        import json
+        # JSON export - UPDATED to include university info
         data = {
+            'academic_institution': {
+                'university': university_name,
+                'department': department_name,
+                'course': course_name,
+                'academic_year': academic_year,
+            },
             'attachment': {
                 'organization': attachment.organization,
                 'department': attachment.department,
@@ -320,10 +381,21 @@ def export_logbook(request, attachment_id, format_type):
             },
             'student': {
                 'name': request.user.get_full_name(),
-                'email': request.user.email
+                'email': request.user.email,
+                'student_id': request.user.student_id
+            },
+            'lecturer': lecturer_name,
+            'statistics': {
+                'total_entries': entries.count(),
+                'total_hours': float(total_hours),
+                'entries_with_comments': entries_with_comments,
+                'progress_percentage': progress_percentage,
+                'average_hours_per_day': float(average_hours_per_day),
+                'reviewed_percentage': float(reviewed_percentage)
             },
             'entries': [
                 {
+                    'entry_number': i,
                     'date': str(entry.entry_date),
                     'department_section': entry.department_section,
                     'tasks': entry.tasks,
@@ -332,14 +404,15 @@ def export_logbook(request, attachment_id, format_type):
                     'challenges': entry.challenges,
                     'hours_worked': float(entry.hours_worked),
                     'supervisor_comments': entry.supervisor_comments,
+                    'has_comments': bool(entry.supervisor_comments),
                     'edit_count': entry.edit_count
                 }
-                for entry in entries
+                for i, entry in enumerate(entries, 1)
             ]
         }
         
         response = HttpResponse(json.dumps(data, indent=2), content_type='application/json')
-        response['Content-Disposition'] = f'attachment; filename="logbook_{attachment.organization}_{timezone.now().date()}.json"'
+        response['Content-Disposition'] = f'attachment; filename="{university_name.replace(" ", "_")}_Logbook_{attachment.organization}_{timezone.now().date()}.json"'
         return response
     
     return HttpResponse("Unsupported export format", status=400)
