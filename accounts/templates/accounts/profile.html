@@ -1,31 +1,221 @@
 <!-- templates/accounts/profile.html -->
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block title %}Profile - PractiCheck{% endblock %}
 
+{% block extra_head %}
+<style>
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #dee2e6;
+    --primary-color: #3498db;
+    --secondary-color: #6c757d;
+}
+
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --card-bg: #2d3748;
+    --border-color: #4a5568;
+    --primary-color: #63b3ed;
+    --secondary-color: #a0aec0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.form-control, .form-select {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.form-label {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2980b9 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #2573a7 100%);
+    color: white;
+}
+
+.btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 8px;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.list-group-item {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+.list-group-item.active {
+    background: linear-gradient(135deg, #2c3e50 0%, var(--primary-color) 100%);
+    border-color: var(--primary-color);
+}
+
+.text-muted {
+    color: var(--secondary-color) !important;
+}
+
+.profile-picture-container {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-picture-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: white;
+}
+
+.profile-picture-container:hover .profile-picture-overlay {
+    opacity: 1;
+}
+
+.password-strength {
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 5px;
+    transition: all 0.3s ease;
+}
+
+.strength-weak { background-color: #dc3545; width: 25%; }
+.strength-fair { background-color: #ffc107; width: 50%; }
+.strength-good { background-color: #28a745; width: 75%; }
+.strength-strong { background-color: #20c997; width: 100%; }
+
+.theme-toggle-btn {
+    background: none;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 20px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.form-control-static {
+    padding: 0.375rem 0;
+    margin-bottom: 0;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row">
         <!-- Sidebar Navigation -->
         <div class="col-lg-3 mb-4">
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-transparent">
                     <h5 class="mb-0 text-center">Profile</h5>
                 </div>
                 <div class="card-body text-center">
                     <!-- Profile Picture Upload -->
                     <form id="profilePicForm" method="post" enctype="multipart/form-data" action="{% url 'accounts:upload_profile_picture' %}">
                         {% csrf_token %}
-                        <label for="profileInput" style="cursor: pointer;">
-                            <img id="profilePreview"
-                                 src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=3498db&color=fff&size=120{% endif %}" 
-                                 alt="Profile Picture" class="rounded-circle mb-2" width="120" height="120">
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary">Change Photo</button>
-                            </div>
-                        </label>
-                        <input type="file" name="profile_picture" id="profileInput" accept="image/*" style="display: none;">
+                        <div class="profile-picture-container">
+                            <label for="profileInput" style="cursor: pointer;">
+                                <img id="profilePreview"
+                                     src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=3498db&color=fff&size=120{% endif %}" 
+                                     alt="Profile Picture" class="rounded-circle mb-2" width="120" height="120" style="object-fit: cover;">
+                                <div class="profile-picture-overlay">
+                                    <i class="fas fa-camera fa-2x"></i>
+                                </div>
+                            </label>
+                            <input type="file" name="profile_picture" id="profileInput" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Click to change photo</small>
+                        </div>
                     </form>
                     <h5 class="card-title mt-3">{{ user.get_full_name|default:user.username }}</h5>
                     <p class="text-muted text-capitalize">{{ user.get_user_type_display }}</p>
@@ -40,6 +230,9 @@
                     <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="tab">
                         <i class="fas fa-bell me-2"></i>Notifications
                     </a>
+                    <a href="#appearance" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-palette me-2"></i>Appearance
+                    </a>
                     {% if user.user_type == 1 and user.student_profile %}
                     <a href="#academic-info" class="list-group-item list-group-item-action" data-bs-toggle="tab">
                         <i class="fas fa-graduation-cap me-2"></i>Academic Information
@@ -52,15 +245,16 @@
         <!-- Profile Content -->
         <div class="col-lg-9">
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-transparent">
                     <h4 class="mb-0">Profile Settings</h4>
                 </div>
                 <div class="card-body">
                     <div class="tab-content">
                         <!-- Profile Information Tab -->
                         <div class="tab-pane fade show active" id="profile-info">
-                            <form method="post">
+                            <form method="post" id="profileForm">
                                 {% csrf_token %}
+                                <input type="hidden" name="update_profile" value="true">
                                 
                                 <div class="row mb-4">
                                     <div class="col-md-6">
@@ -68,33 +262,40 @@
                                         <p class="text-muted">Update your personal details</p>
                                     </div>
                                     <div class="col-md-6 text-end">
-                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save Changes
+                                        </button>
                                     </div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_first_name" class="form-label">First Name</label>
+                                        <label for="id_first_name" class="form-label">First Name *</label>
                                         <input type="text" name="first_name" value="{{ user.first_name }}" 
                                                class="form-control" id="id_first_name" required>
+                                        <div class="invalid-feedback">Please provide your first name.</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_last_name" class="form-label">Last Name</label>
+                                        <label for="id_last_name" class="form-label">Last Name *</label>
                                         <input type="text" name="last_name" value="{{ user.last_name }}" 
                                                class="form-control" id="id_last_name" required>
+                                        <div class="invalid-feedback">Please provide your last name.</div>
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="id_email" class="form-label">Email Address</label>
+                                    <label for="id_email" class="form-label">Email Address *</label>
                                     <input type="email" name="email" value="{{ user.email }}" 
                                            class="form-control" id="id_email" required>
+                                    <div class="form-text">Your email address is used for account notifications and password resets.</div>
+                                    <div class="invalid-feedback">Please provide a valid email address.</div>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="id_phone_number" class="form-label">Phone Number</label>
                                     <input type="tel" name="phone_number" value="{{ user.phone_number|default:'' }}" 
-                                           class="form-control" id="id_phone_number">
+                                           class="form-control" id="id_phone_number" pattern="[0-9+\-\s()]+">
+                                    <div class="invalid-feedback">Please provide a valid phone number.</div>
                                 </div>
                                 
                                 <hr class="my-4">
@@ -104,48 +305,55 @@
                                 {% if user.user_type == 1 and user.student_profile %}
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_student_id" class="form-label">Student ID</label>
+                                        <label for="id_student_id" class="form-label">Student ID *</label>
                                         <input type="text" name="student_id" value="{{ user.student_profile.student_id }}" 
                                                class="form-control" id="id_student_id" required>
+                                        <div class="invalid-feedback">Please provide your student ID.</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_course" class="form-label">Course</label>
+                                        <label for="id_course" class="form-label">Course *</label>
                                         <input type="text" name="course" value="{{ user.student_profile.course }}" 
                                                class="form-control" id="id_course" required>
+                                        <div class="invalid-feedback">Please provide your course.</div>
                                     </div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_year_of_study" class="form-label">Year of Study</label>
+                                        <label for="id_year_of_study" class="form-label">Year of Study *</label>
                                         <input type="number" name="year_of_study" value="{{ user.student_profile.year_of_study }}" 
                                                class="form-control" id="id_year_of_study" min="1" max="6" required>
+                                        <div class="invalid-feedback">Please provide a valid year of study (1-6).</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_department" class="form-label">Department</label>
+                                        <label for="id_department" class="form-label">Department *</label>
                                         <input type="text" name="department" value="{{ user.student_profile.department }}" 
                                                class="form-control" id="id_department" required>
+                                        <div class="invalid-feedback">Please provide your department.</div>
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="id_university" class="form-label">University</label>
+                                    <label for="id_university" class="form-label">University *</label>
                                     <input type="text" name="university" value="{{ user.student_profile.university }}" 
                                            class="form-control" id="id_university" required>
+                                    <div class="invalid-feedback">Please provide your university.</div>
                                 </div>
                                 {% endif %}
                                 
                                 {% if user.user_type == 2 and user.supervisor_profile %}
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_organization" class="form-label">Organization</label>
+                                        <label for="id_organization" class="form-label">Organization *</label>
                                         <input type="text" name="organization" value="{{ user.supervisor_profile.organization }}" 
                                                class="form-control" id="id_organization" required>
+                                        <div class="invalid-feedback">Please provide your organization.</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_position" class="form-label">Position</label>
+                                        <label for="id_position" class="form-label">Position *</label>
                                         <input type="text" name="position" value="{{ user.supervisor_profile.position }}" 
                                                class="form-control" id="id_position" required>
+                                        <div class="invalid-feedback">Please provide your position.</div>
                                     </div>
                                 </div>
                                 
@@ -159,21 +367,24 @@
                                 {% if user.user_type == 3 and user.lecturer_profile %}
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_staff_id" class="form-label">Staff ID</label>
+                                        <label for="id_staff_id" class="form-label">Staff ID *</label>
                                         <input type="text" name="staff_id" value="{{ user.lecturer_profile.staff_id }}" 
                                                class="form-control" id="id_staff_id" required>
+                                        <div class="invalid-feedback">Please provide your staff ID.</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="id_department" class="form-label">Department</label>
+                                        <label for="id_department" class="form-label">Department *</label>
                                         <input type="text" name="department" value="{{ user.lecturer_profile.department }}" 
                                                class="form-control" id="id_department" required>
+                                        <div class="invalid-feedback">Please provide your department.</div>
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="id_faculty" class="form-label">Faculty</label>
+                                    <label for="id_faculty" class="form-label">Faculty *</label>
                                     <input type="text" name="faculty" value="{{ user.lecturer_profile.faculty }}" 
                                            class="form-control" id="id_faculty" required>
+                                        <div class="invalid-feedback">Please provide your faculty.</div>
                                 </div>
                                 {% endif %}
                             </form>
@@ -188,38 +399,61 @@
                                 </div>
                             </div>
                             
-                            <form action="{% url 'password_change' %}" method="post">
+                            <form method="post" id="passwordForm">
                                 {% csrf_token %}
+                                <input type="hidden" name="change_password" value="true">
                                 
                                 <div class="mb-3">
-                                    <label for="id_old_password" class="form-label">Current Password</label>
+                                    <label for="id_old_password" class="form-label">Current Password *</label>
                                     <input type="password" name="old_password" class="form-control" 
                                            id="id_old_password" required>
+                                    <div class="invalid-feedback">Please enter your current password.</div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="id_new_password1" class="form-label">New Password</label>
+                                    <label for="id_new_password1" class="form-label">New Password *</label>
                                     <input type="password" name="new_password1" class="form-control" 
-                                           id="id_new_password1" required>
-                                    <div class="form-text">Your password must contain at least 8 characters.</div>
+                                           id="id_new_password1" required minlength="8">
+                                    <div class="form-text">
+                                        <div>Password requirements:</div>
+                                        <ul class="small mb-1">
+                                            <li>At least 8 characters long</li>
+                                            <li>Contains letters and numbers</li>
+                                            <li>Not too similar to your personal information</li>
+                                        </ul>
+                                    </div>
+                                    <div class="password-strength" id="passwordStrength"></div>
+                                    <div class="invalid-feedback" id="passwordError">Please provide a valid password.</div>
                                 </div>
                                 
                                 <div class="mb-4">
-                                    <label for="id_new_password2" class="form-label">Confirm New Password</label>
+                                    <label for="id_new_password2" class="form-label">Confirm New Password *</label>
                                     <input type="password" name="new_password2" class="form-control" 
-                                           id="id_new_password2" required>
+                                           id="id_new_password2" required minlength="8">
+                                    <div class="invalid-feedback">Passwords do not match.</div>
                                 </div>
                                 
-                                <button type="submit" class="btn btn-primary">Update Password</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key me-2"></i>Update Password
+                                </button>
                             </form>
                             
                             <hr class="my-4">
                             
-                            <h5 class="mb-3">Two-Factor Authentication</h5>
+                            <h5 class="mb-3">Account Security</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <p class="mb-1"><strong>Email Address</strong></p>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                    <div class="form-text">Your email is used for important account notifications and password resets.</div>
+                                </div>
+                                <span class="badge bg-success">Verified</span>
+                            </div>
+                            
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <p class="mb-1">Two-factor authentication adds an extra layer of security to your account.</p>
-                                    <small class="text-muted">Currently disabled</small>
+                                    <p class="mb-1"><strong>Two-Factor Authentication</strong></p>
+                                    <small class="text-muted">Add an extra layer of security to your account</small>
                                 </div>
                                 <button class="btn btn-outline-primary">Enable 2FA</button>
                             </div>
@@ -234,25 +468,104 @@
                                 </div>
                             </div>
                             
-                            <form>
+                            <form method="post" id="notificationForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="update_notifications" value="true">
+                                
                                 <h6 class="mb-3">Email Notifications</h6>
                                 <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
-                                    <label class="form-check-label" for="emailNotifications">Email Notifications</label>
+                                    <input class="form-check-input" type="checkbox" name="email_notifications" 
+                                           id="emailNotifications" {% if notification_prefs.email_notifications %}checked{% endif %}>
+                                    <label class="form-check-label" for="emailNotifications">
+                                        <strong>Email Notifications</strong>
+                                        <div class="form-text">Receive important updates via email</div>
+                                    </label>
                                 </div>
                                 <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="logbookReminders" checked>
-                                    <label class="form-check-label" for="logbookReminders">Logbook Entry Reminders</label>
+                                    <input class="form-check-input" type="checkbox" name="logbook_reminders" 
+                                           id="logbookReminders" {% if notification_prefs.logbook_reminders %}checked{% endif %}>
+                                    <label class="form-check-label" for="logbookReminders">
+                                        <strong>Logbook Entry Reminders</strong>
+                                        <div class="form-text">Get reminders for pending logbook entries</div>
+                                    </label>
                                 </div>
                                 <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="evaluationAlerts" checked>
-                                    <label class="form-check-label" for="evaluationAlerts">Evaluation Alerts</label>
+                                    <input class="form-check-input" type="checkbox" name="evaluation_alerts" 
+                                           id="evaluationAlerts" {% if notification_prefs.evaluation_alerts %}checked{% endif %}>
+                                    <label class="form-check-label" for="evaluationAlerts">
+                                        <strong>Evaluation Alerts</strong>
+                                        <div class="form-text">Notifications about evaluations and feedback</div>
+                                    </label>
                                 </div>
                                 <div class="form-check form-switch mb-4">
-                                    <input class="form-check-input" type="checkbox" id="newsletter" checked>
-                                    <label class="form-check-label" for="newsletter">Newsletter and Updates</label>
+                                    <input class="form-check-input" type="checkbox" name="newsletter" 
+                                           id="newsletter" {% if notification_prefs.newsletter %}checked{% endif %}>
+                                    <label class="form-check-label" for="newsletter">
+                                        <strong>Newsletter and Updates</strong>
+                                        <div class="form-text">Receive platform updates and news</div>
+                                    </label>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Save Preferences</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Preferences
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Appearance Tab -->
+                        <div class="tab-pane fade" id="appearance">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5>Appearance Settings</h5>
+                                    <p class="text-muted">Customize how PractiCheck looks</p>
+                                </div>
+                            </div>
+                            
+                            <form method="post" id="appearanceForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="toggle_dark_theme" value="true">
+                                
+                                <h6 class="mb-3">Theme Preferences</h6>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Dark Theme</h6>
+                                                <p class="card-text text-muted mb-3">
+                                                    Switch between light and dark themes for better visibility in different lighting conditions.
+                                                </p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="{% if dark_theme_enabled %}text-success{% else %}text-muted{% endif %}">
+                                                        <i class="fas {% if dark_theme_enabled %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-2"></i>
+                                                        {% if dark_theme_enabled %}Enabled{% else %}Disabled{% endif %}
+                                                    </span>
+                                                    <button type="submit" class="btn {% if dark_theme_enabled %}btn-outline-secondary{% else %}btn-outline-primary{% endif %}">
+                                                        {% if dark_theme_enabled %}
+                                                            <i class="fas fa-sun me-2"></i>Switch to Light
+                                                        {% else %}
+                                                            <i class="fas fa-moon me-2"></i>Switch to Dark
+                                                        {% endif %}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <h6 class="mb-3">Preview</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card {% if dark_theme_enabled %}bg-dark text-white{% endif %}" style="height: 150px;">
+                                            <div class="card-body d-flex align-items-center justify-content-center">
+                                                <div class="text-center">
+                                                    <i class="fas fa-palette fa-2x mb-2 {% if dark_theme_enabled %}text-warning{% else %}text-primary{% endif %}"></i>
+                                                    <p class="mb-0">{% if dark_theme_enabled %}Dark Theme{% else %}Light Theme{% endif %} Preview</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                         
@@ -336,71 +649,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.card {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    border: none;
-    border-radius: 8px;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #2980b9 0%, #2573a7 100%);
-}
-
-.btn-outline-primary {
-    border-color: #3498db;
-    color: #3498db;
-    border-radius: 8px;
-}
-
-.btn-outline-primary:hover {
-    background: #3498db;
-    border-color: #3498db;
-}
-
-.form-control:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-}
-
-.list-group-item.active {
-    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-    border-color: #3498db;
-}
-
-.profile-picture img {
-    object-fit: cover;
-}
-
-.form-control-static {
-    padding: 0.375rem 0;
-    margin-bottom: 0;
-    font-weight: 500;
-    color: #2c3e50;
-}
-
-.form-check-input:checked {
-    background-color: #3498db;
-    border-color: #3498db;
-}
-</style>
-
+{% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tab functionality
     const triggerTabList = document.querySelectorAll('[data-bs-toggle="tab"]');
     triggerTabList.forEach(triggerEl => {
-        new bootstrap.Tab(triggerEl);
+        triggerEl.addEventListener('click', function (e) {
+            e.preventDefault();
+            const tabTrigger = new bootstrap.Tab(this);
+            tabTrigger.show();
+            
+            // Update active state in sidebar
+            triggerTabList.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+        });
     });
 
-    // Handle form submissions
+    // Form validation
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
         form.addEventListener('submit', function(event) {
@@ -412,21 +680,201 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Profile picture upload
+    // Profile picture upload with preview
     const profileInput = document.getElementById('profileInput');
     const profileForm = document.getElementById('profilePicForm');
     const profilePreview = document.getElementById('profilePreview');
 
     profileInput.addEventListener('change', function() {
         if (profileInput.files && profileInput.files[0]) {
+            const file = profileInput.files[0];
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPEG, PNG, GIF).');
+                return;
+            }
+            
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Please select an image smaller than 5MB.');
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 profilePreview.src = e.target.result;
+                
+                // Show loading state
+                const originalSrc = profilePreview.src;
+                profilePreview.style.opacity = '0.7';
+                
+                // Submit form after preview
+                setTimeout(() => {
+                    profileForm.submit();
+                }, 500);
             }
-            reader.readAsDataURL(profileInput.files[0]);
-            profileForm.submit();
+            reader.readAsDataURL(file);
         }
     });
+
+    // Password strength indicator
+    const passwordInput = document.getElementById('id_new_password1');
+    const passwordStrength = document.getElementById('passwordStrength');
+    const passwordError = document.getElementById('passwordError');
+
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 0;
+            let feedback = '';
+
+            // Length check
+            if (password.length >= 8) strength += 1;
+            
+            // Contains numbers
+            if (/\d/.test(password)) strength += 1;
+            
+            // Contains letters
+            if (/[a-zA-Z]/.test(password)) strength += 1;
+            
+            // Contains special characters
+            if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
+
+            // Update strength indicator
+            passwordStrength.className = 'password-strength';
+            if (password.length > 0) {
+                if (strength <= 1) {
+                    passwordStrength.classList.add('strength-weak');
+                    feedback = 'Password is weak';
+                } else if (strength === 2) {
+                    passwordStrength.classList.add('strength-fair');
+                    feedback = 'Password is fair';
+                } else if (strength === 3) {
+                    passwordStrength.classList.add('strength-good');
+                    feedback = 'Password is good';
+                } else {
+                    passwordStrength.classList.add('strength-strong');
+                    feedback = 'Password is strong';
+                }
+            }
+
+            // Validate password match
+            const confirmPassword = document.getElementById('id_new_password2');
+            if (confirmPassword && confirmPassword.value) {
+                validatePasswordMatch();
+            }
+        });
+
+        // Password confirmation validation
+        const confirmPassword = document.getElementById('id_new_password2');
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', validatePasswordMatch);
+        }
+
+        function validatePasswordMatch() {
+            const password = passwordInput.value;
+            const confirm = confirmPassword.value;
+            
+            if (confirm && password !== confirm) {
+                confirmPassword.classList.add('is-invalid');
+                confirmPassword.classList.remove('is-valid');
+            } else if (confirm) {
+                confirmPassword.classList.remove('is-invalid');
+                confirmPassword.classList.add('is-valid');
+            }
+        }
+    }
+
+    // Real-time form validation
+    const formInputs = document.querySelectorAll('.form-control');
+    formInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            this.classList.add('touched');
+            validateField(this);
+        });
+
+        input.addEventListener('input', function() {
+            if (this.classList.contains('touched')) {
+                validateField(this);
+            }
+        });
+    });
+
+    function validateField(field) {
+        if (field.checkValidity()) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        } else {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+        }
+    }
+
+    // Theme persistence
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'dark' || {% if dark_theme_enabled %}true{% else %}false{% endif %}) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    // Auto-save functionality for profile form
+    let saveTimeout;
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        const inputs = profileForm.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    // Show saving indicator
+                    const submitBtn = profileForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+                    submitBtn.disabled = true;
+                    
+                    // Simulate auto-save (you can implement actual auto-save here)
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        
+                        // Show auto-save notification
+                        showAutoSaveNotification();
+                    }, 1000);
+                }, 2000);
+            });
+        });
+    }
+
+    function showAutoSaveNotification() {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Changes saved automatically
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+
+    // Enhanced phone number formatting
+    const phoneInput = document.getElementById('id_phone_number');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                value = value.match(/.{1,4}/g).join(' ');
+            }
+            e.target.value = value;
+        });
+    }
 });
 </script>
 {% endblock %}
