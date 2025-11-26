@@ -218,7 +218,7 @@
                             {% with assignment=user.student_assignments.first %}
                             <div>
                                 <h6 class="text-success mb-3">
-                                    <i class="fas fa-check-circle me-2"></i>Assigned to Supervisor
+                                    <i class="fas fa-check-circle me-2"></i>Assigned to Student
                                 </h6>
                                 <p class="mb-1"><strong>Lecturer:</strong> {{ assignment.lecturer.user.get_full_name }}</p>
                                 <p class="mb-1"><strong>Department:</strong> {{ assignment.lecturer.department.name }}</p>

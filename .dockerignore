@@ -11,3 +11,15 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 .env
+
+.git
+.gitignore
+README.md
+Dockerfile
+.env
+*.log
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
