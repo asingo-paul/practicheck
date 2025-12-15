@@ -1,13 +1,19 @@
-name: practicheck
+
 
 services:
   app:
-    image: asingopaul/practicheck:v1.3
-    container_name: my-practicheck1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: asingopaul/practicheck:v2.0
+    container_name: practicheck
     ports:
       - "8000:8000"
     env_file:
-      - .env   # load environment variables
-    volumes:
-      - .:/app # mount local code for development (remove in production)
-    command: python manage.py runserver 0.0.0.0:8000
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
