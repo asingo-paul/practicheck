@@ -32,7 +32,6 @@ __pycache__/
 # db.sqlite3
 *.log
 
-#local environment variables
-.env
+
 
 .github/
