@@ -21,16 +21,21 @@ from django.conf import settings
 from django.conf.urls.static import static
 from . import views
 from django.shortcuts import render
-
+from django.http import JsonResponse
+from django.urls import path, include
 
 def home(request):
     return render(request, "home.html")   # ✅ use your template
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
 
 
 urlpatterns = [
     path("", home, name="home"), 
     path("", views.home, name="home"),  # Root landing page
     path("admin/", admin.site.urls),
+    path("health/", health_check)
 
     # App urls
     # path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
