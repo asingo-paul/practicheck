@@ -32,10 +32,11 @@ def health_check(request):
 
 
 urlpatterns = [
+    path("health/", health_check),
     path("", home, name="home"), 
     path("", views.home, name="home"),  # Root landing page
     path("admin/", admin.site.urls),
-    path("health/", health_check)
+    
 
     # App urls
     # path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
