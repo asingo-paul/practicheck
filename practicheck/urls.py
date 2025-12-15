@@ -1,64 +1,28 @@
-"""
-URL configuration for practicheck project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from . import views
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.urls import path, include
 
+# Views
 def home(request):
-    return render(request, "home.html")   # ✅ use your template
+    return render(request, "home.html")  # ✅ use your template
 
 def health_check(request):
     return JsonResponse({"status": "ok"})
 
-
 urlpatterns = [
-    path("health/", health_check),
-    path("", home, name="home"), 
-    path("", views.home, name="home"),  # Root landing page
+    path("health/", health_check),          # Health endpoint
+    path("", home, name="home"),            # Root landing page
     path("admin/", admin.site.urls),
-    
 
     # App urls
-    # path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
     path("accounts/", include("accounts.urls")),
     path("attachments/", include(("attachments.urls", "attachments"), namespace="attachments")),
     path("evaluations/", include(("evaluations.urls", "evaluations"), namespace="evaluations")),
     path("accounts/", include("django.contrib.auth.urls")),
-    # path("attachments/", include("attachments.urls")),
-    
-
 ]
-
-
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('', views.home, name='home'),
-#     path('accounts/', include('accounts.urls', namespace='accounts')),
-#     path('attachments/', include('attachments.urls', namespace='attachments')),
-#     path('evaluations/', include('evaluations.urls', namespace='evaluations')),
-#     path("dashboard/", views.dashboard, name="dashboard"),
-   
-# ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
