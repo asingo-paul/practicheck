@@ -44,4 +44,5 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "practicheck.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "practicheck.wsgi:application", "--workers", "3", "-k", "gevent", "--timeout", "120", "--log-level", "info"]
+

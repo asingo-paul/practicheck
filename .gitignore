@@ -36,3 +36,6 @@ __pycache__/
 .env
 
 .github/
+.venv/
+.venv/
+env/
